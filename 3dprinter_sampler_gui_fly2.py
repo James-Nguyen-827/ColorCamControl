@@ -386,7 +386,7 @@ def run_experiment(event, values, thread_event, camera, preview_win_id):
             elif values[EXP_RADIO_PIC_KEY] == True:
                 print("Taking Pictures Only")
                 if folder_path:
-                    file_full_path = P.get_file_full_path(folder_path, well_number)
+                    file_full_path = P.get_file_full_path(folder_path, well_number, total_wells=len(gcode_string_list))
                     get_well_picture(camera, file_full_path)
                     data_row = GCS.gen_cam_data(file_full_path, camera)
                     GCS.append_to_csv_file(data_row)
@@ -504,13 +504,13 @@ def run_experiment2(event, values, thread_event, camera, preview_win_id):
                 elif values[EXP_RADIO_VID_KEY] == True:
                     print("Recording Video Footage")
                     if folder_path:
-                        file_full_path = P.get_file_full_path(folder_path, well_number)
+                        file_full_path = P.get_file_full_path(folder_path, well_number, total_wells=len(gcode_string_list))
                     # TODO: Change to Video Captures
                     # camera.capture(file_full_path)ffd4
                 elif values[EXP_RADIO_PIC_KEY] == True:
                     print("Taking Pictures Only")
                     if folder_path:
-                        file_full_path = P.get_file_full_path(folder_path, well_number)
+                        file_full_path = P.get_file_full_path(folder_path, well_number, total_wells=len(gcode_string_list))
                     # print(file_full_path)
                     
                     # Change Image Capture Resolution
@@ -667,9 +667,9 @@ def run_experiment_gui(main_values, camera):
     window_exp = sg.Window("Experiment GUI Window", layout_exp, finalize=True)
     
     # Create New Folder If not in "Preview" Mode
-    if main_values[EXP_RADIO_PREVIEW_KEY] == False:
-        folder_path = P.create_and_get_folder_path()
-        print("Not in Preview Mode, creating folder:", folder_path)
+            if main_values[EXP_RADIO_PREVIEW_KEY] == False:
+                folder_path = P.create_and_get_folder_path()
+            print("Not in Preview Mode, creating folder:", folder_path)
     
     # Setup how long to wait before moving to next well (and GUI loop)
     time_to_wait = 2000 # in millisec
@@ -1575,7 +1575,7 @@ def main():
     # TODO: Create User Input for number of Trials (use placeholder)
     time_layout = ET.get_time_layout()
     tab_1_layout = [
-        [sg.Text(OPEN_CSV_PROMPT), sg.Input(), sg.FileBrowse(key=OPEN_CSV_FILEBROWSE_KEY)],
+        [sg.Text(OPEN_CSV_PROMPT), sg.Input(default_text=os.path.join(os.getcwd(),"testing","Well_Location")), sg.FileBrowse(initial_folder=os.path.join(os.getcwd(),"testing","Well_Location"), key=OPEN_CSV_FILEBROWSE_KEY)],
         *time_layout,
         [sg.Text(EXP_RADIO_PROMPT)],
         [sg.Radio(EXP_RADIO_PIC_TEXT, EXP_RADIO_GROUP, default=False, key=EXP_RADIO_PIC_KEY),
@@ -1596,7 +1596,7 @@ def main():
     ]
 
     corner_layout = [
-        [sg.Text("Rows/Cols:"), sg.Input("8", size=(4,1), key="--NUM_ROWS--"), sg.Input("12", size=(4,1), key="--NUM_COLS--")],
+        [sg.Text("Rows/Cols:"), sg.Input("6", size=(4,1), key="--NUM_ROWS--"), sg.Input("8", size=(4,1), key="--NUM_COLS--")],
         [sg.Text("Top-Left:"), sg.Input("", size=(20,1), key="--TL_COORD--"), sg.Button("Set TL", key="--SET_TL--")],
         [sg.Text("Top-Right:"), sg.Input("", size=(20,1), key="--TR_COORD--"), sg.Button("Set TR", key="--SET_TR--")],
         [sg.Text("Bottom-Left:"), sg.Input("", size=(20,1), key="--BL_COORD--"), sg.Button("Set BL", key="--SET_BL--")],
@@ -1612,11 +1612,11 @@ def main():
                      [sg.Text("", size=(5, 1)), sg.Button(Y_PLUS, size=(10, 1)), sg.Text("", size=(5, 1)), sg.Button(Z_MINUS, size=(5, 1))],
                      [sg.Button(X_MINUS, size=(10, 1)), sg.Button(X_PLUS, size=(10, 1))],
                      [sg.Text("", size=(5, 1)), sg.Button(Y_MINUS, size=(10, 1)), sg.Text("", size=(5, 1)), sg.Button(Z_PLUS, size=(5, 1))],
+                     [sg.Text("Input GCODE (e.g. G0X0Y50):")],
+                     [sg.InputText(size=(30, 1), key="-GCODE_INPUT-"), sg.Button("Run", size=(5, 1)), sg.Button("Clear", size=(5, 1))],
                      [sg.HorizontalSeparator()],
                      [sg.Frame("Crosshair", crosshair_layout)],
-                     [sg.Frame("Corners (csv coords)", corner_layout)],
-                     [sg.Text("Input GCODE (e.g. G0X0Y50):")],
-                     [sg.InputText(size=(30, 1), key="-GCODE_INPUT-"), sg.Button("Run", size=(5, 1)), sg.Button("Clear", size=(5, 1))]
+                     [sg.Frame("Corners (csv coords)", corner_layout)]
                    ]
     
     # Setup Tab/GUI Layout

@@ -149,11 +149,16 @@ def create_and_get_folder_path2(dest_folder):
 
 # Define function that creates the full file path to save video or pictures (folder and file name)
 # Creates a unique file name using current date and time
-def get_file_full_path(folder_path, well_number):
+def get_file_full_path(folder_path, well_number, total_wells=None):
     current_time = datetime.now()
     # file_name_suffix = current_time.strftime("%Y-%m-%d_%H%M%S_%f")
     file_name_suffix = current_time.strftime("%Y-%m-%d_%H%M%S")
-    file_name_full = "well_{}_{}_.jpg".format(well_number, file_name_suffix)
+    if total_wells is None:
+        width = 3
+    else:
+        width = max(3, len(str(total_wells)))
+    well_str = str(well_number).zfill(width)
+    file_name_full = f"well_{well_str}_{file_name_suffix}_.jpg"
     file_full_path = "{}/{}".format(folder_path, file_name_full)
     # print(file_full_path)
     return file_full_path
@@ -189,5 +194,4 @@ def main():
 # Source: www.freeecodecamp.org/news/if-name-main-python-example/
 if __name__ == "__main__":
 	main()
-
 
