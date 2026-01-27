@@ -18,6 +18,7 @@ Changelog:
 """
 import cv2
 import FreeSimpleGUI as sg
+import numpy as np
 
 from os import remove
 from os.path import join
@@ -72,6 +73,9 @@ ALL_CROSS_HAIR_EVENTS = [LOAD_IMAGE, RAD_MINUS_TEN, RAD_MINUS_ONE, RAD_PLUS_ONE,
 # TODO: Capture image to byte
 temp_filename = "temp.jpg"
 
+# Overlay defaults
+CROSSHAIR_PREVIEW_RES = (640, 480)
+
 
 def get_dummy_image():
     # Dummy Image as placeholder
@@ -124,60 +128,7 @@ def update_line_thickness(values):
 
 def draw_on_image(camera, camera_lock=None):
 
-    # Temp image get
-    # image = get_dummy_image()
-    # image_edit = image.copy()
-    
-    # Get image from camera
-    # temp_filename = "temp.jpg"
-    def _capture():
-        was_previewing = False
-        # Fallback preview settings (matches default GUI window)
-        saved_preview = (0, 36, 640, 480, 255)
-        saved_res = getattr(camera, "resolution", None)
-        if hasattr(camera, "preview"):
-            was_previewing = bool(camera.preview)
-            if was_previewing:
-                camera.stop_preview()
-        # Capture at small size to avoid huge preview flashes
-        if saved_res:
-            camera.resolution = (640, 480)
-        camera.capture(temp_filename)
-        if saved_res:
-            camera.resolution = saved_res
-        if was_previewing:
-            x, y, w, h, alpha = saved_preview
-            camera.start_preview(alpha=alpha, fullscreen=False, window=(x, y, w, h))
-
-    if camera_lock:
-        with camera_lock:
-            _capture()
-    else:
-        _capture()
-    image = cv2.imread(temp_filename)
-    image_edit = image.copy()
-
-    # Get dimensions of image
-    # print(image.shape)
-    height, width, ch = image.shape
-    # Get center x, center y.
-    center_x = int(width / 2)
-    center_y = int(height / 2)
-    # print(f"Center: {center_x, center_y}")
-
-    image_edit = draw_cross_hairs(image)
-
-    # Downscale for display to keep window small
-    if image_edit.shape[1] > CROSSHAIR_PREVIEW_RES[0] or image_edit.shape[0] > CROSSHAIR_PREVIEW_RES[1]:
-        image_edit = cv2.resize(image_edit, CROSSHAIR_PREVIEW_RES, interpolation=cv2.INTER_AREA)
-
-    # On copy, Draw circle at center x/y with radius
-    center_coordinates = (center_x, center_y)
-    image_edit = cv2.circle(image_edit, center_coordinates, CIRCLE_RADIUS, CIRCLE_COLOR, CIRCLE_THICKNESS)
-
-    # Display Image
-    cv2.imshow("Cross Hair Preview", image_edit)
-    cv2.waitKey(1)
+    # Deprecated: overlay now handled via create_crosshair_overlay in GUI.
     pass
 
 
@@ -204,6 +155,47 @@ def draw_cross_hairs(image):
     image_edit = cv2.line(image_edit, start_point, end_point, CIRCLE_COLOR, LINE_THICKNESS)
 
     return image_edit
+
+
+def create_crosshair_overlay(camera, radius, thickness, color_bgr, alpha, preview_window, camera_lock=None, existing_overlay=None):
+    """
+    Draw crosshair into an RGBA buffer and add/update a PiCamera overlay.
+    preview_window: (x, y, w, h) matches camera preview window.
+    Returns the overlay object.
+    """
+    x, y, w, h = preview_window
+    # PiCamera overlay requires width multiple of 32, height multiple of 16
+    w_pad = int((w + 31) // 32 * 32)
+    h_pad = int((h + 15) // 16 * 16)
+
+    overlay_img = np.zeros((h_pad, w_pad, 4), dtype=np.uint8)
+
+    center_x = w // 2
+    center_y = h // 2
+
+    # Draw on the visible region; padding remains transparent
+    cv2.line(overlay_img, (0, center_y), (w, center_y), color_bgr, thickness, lineType=cv2.LINE_AA)
+    cv2.line(overlay_img, (center_x, 0), (center_x, h), color_bgr, thickness, lineType=cv2.LINE_AA)
+    cv2.circle(overlay_img, (center_x, center_y), radius, color_bgr, thickness, lineType=cv2.LINE_AA)
+
+    # Set alpha for non-zero pixels
+    alpha_channel = overlay_img[:, :, 3]
+    mask = (overlay_img[:, :, :3].sum(axis=2) > 0)
+    alpha_channel[mask] = alpha
+    overlay_img[:, :, 3] = alpha_channel
+
+    buf = overlay_img.tobytes()
+
+    def _apply():
+        if existing_overlay:
+            camera.remove_overlay(existing_overlay)
+        return camera.add_overlay(buf, size=(w_pad, h_pad), layer=3, alpha=alpha, fullscreen=False, window=(x, y, w, h), format='rgba')
+
+    if camera_lock:
+        with camera_lock:
+            return _apply()
+    else:
+        return _apply()
 
 
 def update_color(event, values, window):

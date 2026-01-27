@@ -1681,7 +1681,8 @@ def main():
     
     # Initialize threading event (Allows you to stop the thread)
     thread_event = threading.Event()
-    
+
+    crosshair_overlay = None
 
     # Create window and show it without plot
     window = sg.Window("3D Printer GUI Test", layout, location=(640, 36))
@@ -1976,11 +1977,45 @@ def main():
             window["--XHAIR_RADIUS--"].update(str(current_rad))
             values["--XHAIR_RADIUS--"] = str(current_rad)
             if values.get("--XHAIR_ON--", True):
-                WL.draw_on_image(camera, CAMERA_LOCK)
-
-        if event in WL.ALL_CROSS_HAIR_EVENTS:
+                # Update overlay on preview
+                preview_rect = (PREVIEW_LOC_X, PREVIEW_LOC_Y + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+                crosshair_overlay = WL.create_crosshair_overlay(
+                    camera,
+                    radius=current_rad,
+                    thickness=WL.CIRCLE_THICKNESS,
+                    color_bgr=WL.CIRCLE_COLOR,
+                    alpha=PREVIEW_ALPHA,
+                    preview_window=preview_rect,
+                    camera_lock=CAMERA_LOCK,
+                    existing_overlay=crosshair_overlay
+                )
+            else:
+                if crosshair_overlay:
+                    with CAMERA_LOCK:
+                        camera.remove_overlay(crosshair_overlay)
+                    crosshair_overlay = None
+        elif event == "--XHAIR_ON--":
             if values.get("--XHAIR_ON--", True):
-                WL.event_manager(event, values, window, camera, CAMERA_LOCK)
+                try:
+                    current_rad = int(values.get("--XHAIR_RADIUS--", WL.CIRCLE_RADIUS))
+                except (TypeError, ValueError):
+                    current_rad = WL.CIRCLE_RADIUS
+                preview_rect = (PREVIEW_LOC_X, PREVIEW_LOC_Y + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+                crosshair_overlay = WL.create_crosshair_overlay(
+                    camera,
+                    radius=current_rad,
+                    thickness=WL.CIRCLE_THICKNESS,
+                    color_bgr=WL.CIRCLE_COLOR,
+                    alpha=PREVIEW_ALPHA,
+                    preview_window=preview_rect,
+                    camera_lock=CAMERA_LOCK,
+                    existing_overlay=crosshair_overlay
+                )
+            else:
+                if crosshair_overlay:
+                    with CAMERA_LOCK:
+                        camera.remove_overlay(crosshair_overlay)
+                    crosshair_overlay = None
         
         # print("You entered ", values[0])
         
