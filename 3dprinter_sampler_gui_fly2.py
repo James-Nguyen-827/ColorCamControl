@@ -1962,6 +1962,22 @@ def main():
             PIC_SAVE_FOLDER = save_folder
 
         
+        # Crosshair controls (Movement tab)
+        if event in ["--XHAIR_INC--", "--XHAIR_DEC--", "--XHAIR_RADIUS--"]:
+            try:
+                current_rad = int(values.get("--XHAIR_RADIUS--", WL.CIRCLE_RADIUS))
+            except (TypeError, ValueError):
+                current_rad = WL.CIRCLE_RADIUS
+            if event == "--XHAIR_INC--":
+                current_rad += 1
+            elif event == "--XHAIR_DEC--":
+                current_rad = max(1, current_rad - 1)
+            WL.CIRCLE_RADIUS = current_rad
+            window["--XHAIR_RADIUS--"].update(str(current_rad))
+            values["--XHAIR_RADIUS--"] = str(current_rad)
+            if values.get("--XHAIR_ON--", True):
+                WL.draw_on_image(camera, CAMERA_LOCK)
+
         if event in WL.ALL_CROSS_HAIR_EVENTS:
             if values.get("--XHAIR_ON--", True):
                 WL.event_manager(event, values, window, camera, CAMERA_LOCK)
