@@ -1737,6 +1737,26 @@ def main():
                 
                     if camera.preview:
                         camera.start_preview(alpha=PREVIEW_ALPHA, fullscreen=False, window=(x_win_preview, y_win_preview + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT))
+                        # If crosshair overlay is on, move it with the preview window
+                        if values.get("--XHAIR_ON--", True):
+                            try:
+                                current_rad = int(values.get("--XHAIR_RADIUS--", WL.CIRCLE_RADIUS))
+                            except (TypeError, ValueError):
+                                current_rad = WL.CIRCLE_RADIUS
+                            if crosshair_overlay:
+                                with CAMERA_LOCK:
+                                    camera.remove_overlay(crosshair_overlay)
+                            preview_rect = (x_win_preview, y_win_preview + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+                            crosshair_overlay = WL.create_crosshair_overlay(
+                                camera,
+                                radius=current_rad,
+                                thickness=WL.CIRCLE_THICKNESS,
+                                color_bgr=WL.CIRCLE_COLOR,
+                                alpha=PREVIEW_ALPHA,
+                                preview_window=preview_rect,
+                                camera_lock=CAMERA_LOCK,
+                                existing_overlay=None
+                            )
         
         # Check Input Text for integers only
         

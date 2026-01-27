@@ -174,9 +174,9 @@ def create_crosshair_overlay(camera, radius, thickness, color_bgr, alpha, previe
     center_x = w // 2
     center_y = h // 2
 
-    cv2.line(mask, (0, center_y), (w, center_y), 255, thickness, lineType=cv2.LINE_AA)
-    cv2.line(mask, (center_x, 0), (center_x, h), 255, thickness, lineType=cv2.LINE_AA)
-    cv2.circle(mask, (center_x, center_y), radius, 255, thickness, lineType=cv2.LINE_AA)
+    cv2.line(mask, (0, center_y), (w, center_y), 255, thickness, lineType=cv2.LINE_8)
+    cv2.line(mask, (center_x, 0), (center_x, h), 255, thickness, lineType=cv2.LINE_8)
+    cv2.circle(mask, (center_x, center_y), radius, 255, thickness, lineType=cv2.LINE_8)
 
     r, g, b = color_bgr[::-1]  # convert BGR to RGB
     overlay_img = np.zeros((h_pad, w_pad, 4), dtype=np.uint8)
