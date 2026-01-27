@@ -69,6 +69,7 @@ import prepare_experiment as P
 import module_get_cam_settings as GCS
 import module_experiment_timer as ET
 import module_well_location_helper as WL
+import module_well_location_calculator as WLC
 
 
 easy_rot = 180 #global variable for camera rotation, moved for access
@@ -80,6 +81,8 @@ OPEN_CSV_PROMPT = "Open CSV:"
 OPEN_CSV_FILEBROWSE_KEY = "-CSV_INPUT-"
 START_EXPERIMENT = "Start Experiment"
 STOP_EXPERIMENT = "Stop Experiment"
+PAUSE_EXPERIMENT = "Pause"
+RESUME_EXPERIMENT = "Resume"
 MAX_NUMBER_EXPERIMENTAL_RUNS = 1
 
 # ---- RADIO GUI KEYS AND TEXT ----
@@ -90,7 +93,7 @@ EXP_RADIO_GROUP = "RADIO_EXP"
 EXP_RADIO_PIC_TEXT = "Picture"
 EXP_RADIO_VID_TEXT = "Video"
 EXP_RADIO_PREVIEW_TEXT = "Preview"
-EXP_RADIO_PROMPT = "For the experiment, choose to take Pictures, Videos, or Preview Only"
+EXP_RADIO_PROMPT = "Experiment mode"
 
 # ---- CAMERA TAB ----
 # CONSTANTS
@@ -1570,14 +1573,17 @@ def main():
     # TODO: Create 3 Radio Buttons for Picture, Video, Preview (Default), and Prompt "Choose to take Pictures, Video, or only preview locations"
     # TODO: Create User Input for number of Trials (use placeholder)
     time_layout = ET.get_time_layout()
-    tab_1_layout = [ [sg.Text(OPEN_CSV_PROMPT), sg.Input(), sg.FileBrowse(key=OPEN_CSV_FILEBROWSE_KEY)],
-                     time_layout[0], time_layout[1], time_layout[2], time_layout[3], time_layout[4],
-                     [sg.Text(EXP_RADIO_PROMPT)],
-                     [sg.Radio(EXP_RADIO_PIC_TEXT, EXP_RADIO_GROUP, default=False, key=EXP_RADIO_PIC_KEY),
-                        sg.Radio(EXP_RADIO_VID_TEXT, EXP_RADIO_GROUP, default=False, key=EXP_RADIO_VID_KEY),
-                        sg.Radio(EXP_RADIO_PREVIEW_TEXT, EXP_RADIO_GROUP, default=True, key=EXP_RADIO_PREVIEW_KEY)],
-                     [sg.Button(START_EXPERIMENT, disabled=True), sg.Button(STOP_EXPERIMENT, disabled=True)]
-                   ]
+    tab_1_layout = [
+        [sg.Text(OPEN_CSV_PROMPT), sg.Input(), sg.FileBrowse(key=OPEN_CSV_FILEBROWSE_KEY)],
+        *time_layout,
+        [sg.Text(EXP_RADIO_PROMPT)],
+        [sg.Radio(EXP_RADIO_PIC_TEXT, EXP_RADIO_GROUP, default=False, key=EXP_RADIO_PIC_KEY),
+         sg.Radio(EXP_RADIO_VID_TEXT, EXP_RADIO_GROUP, default=False, key=EXP_RADIO_VID_KEY),
+         sg.Radio(EXP_RADIO_PREVIEW_TEXT, EXP_RADIO_GROUP, default=True, key=EXP_RADIO_PREVIEW_KEY)],
+        [sg.Text("Save Images to Folder:"), sg.In(size=(25, 1), enable_events=True, key=PIC_SAVE_FOLDER_KEY), sg.FolderBrowse()],
+        [sg.Button(START_EXPERIMENT, disabled=True), sg.Button(PAUSE_EXPERIMENT, disabled=True),
+         sg.Button(RESUME_EXPERIMENT, disabled=True), sg.Button(STOP_EXPERIMENT, disabled=True)]
+    ]
     
     # Tab 2: Movement Tab + Crosshair overlay controls
     crosshair_layout = [
@@ -1603,18 +1609,11 @@ def main():
                    ]
     
     # Setup Tab/GUI Layout
-    # Camera Rotation: []
-    # Set Still Picture Resolution (Actually changes the constant variables)
-    # Width
-    # Height
-    # Set Camera Settings Button
-    # TODO: Change default Camera Rotation to settings file if it exists.
     tab_3_layout = [ [sg.Text("Camera Rotation (in Degrees):"), sg.InputText("180", size=(10, 1), enable_events=True, key=CAMERA_ROTATION_KEY)],
                      [sg.Text("Set Image Capture Resolution:")],
                      [sg.Text("Pic Width (in pixels):"), sg.InputText(PIC_WIDTH, size=(10, 1), enable_events=True, key=PIC_WIDTH_KEY)],
                      [sg.Text("Pic Height (in pixels):"),sg.InputText(PIC_HEIGHT, size=(10, 1), enable_events=True, key=PIC_HEIGHT_KEY)],
                      [sg.Button(UPDATE_CAMERA_TEXT)],
-                     [sg.Text("Save Images to Folder:"), sg.In(size=(25,1), enable_events=True, key=PIC_SAVE_FOLDER_KEY), sg.FolderBrowse()],
                      [sg.Text("Exposure Mode:"),sg.InputText(EXPOSURE_MODE, size=(10, 1), enable_events=True, key=EXPOSURE_MODE_KEY),
                       sg.Text("Expo Settle Time (in sec):"), sg.InputText(EXPO_SETTLE_TIME, size=(5, 1),key=EXPO_SETTLE_TIME_KEY), sg.Button(SET_EXPOSURE_MODE)]
                    ]
@@ -1646,7 +1645,8 @@ def main():
                               sg.Tab("Tab 2 (Mvmt)", tab_2_layout),
                               sg.Tab("Tab 3 (CAM)", tab_3_layout),
                               sg.Tab("Tab 4 (Z Stack)", tab_4_layout),
-                              sg.Tab("Tab 5 (Camera Preview)", tab_5_layout)]])
+                              sg.Tab("Tab 5 (Camera Preview)", tab_5_layout),
+                              sg.Tab("Tab 6 (Well Calc)", WLC.get_layout())]])
                ],
                [sg.Button("Pic"), sg.Button("Vid"), sg.Button("Pic x 10")]
              ]
@@ -2013,6 +2013,9 @@ def main():
                     with CAMERA_LOCK:
                         camera.remove_overlay(crosshair_overlay)
                     crosshair_overlay = None
+        # Well location calculator tab events
+        if event in WLC.WELL_LOCATION_EVENTS or event in [WLC.ROW_KEY, WLC.COL_KEY, WLC.SAVE_FOLDER_KEY]:
+            WLC.event_manager(event, values, window)
         elif event == "--XHAIR_ON--":
             if values.get("--XHAIR_ON--", True):
                 try:

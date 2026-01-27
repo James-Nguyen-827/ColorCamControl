@@ -237,6 +237,58 @@ def get_unique_id():
     # print(f"unique_id: {unique_id}")
     return unique_id
 
+
+def get_layout():
+    sg.theme("LightGreen")
+
+    dim_left = [[sg.Text("Number of Rows:")],
+                [sg.Text("Number of Columns:")]
+                ]
+
+    dim_right = [[sg.Input(WELL_NUMBER_OF_ROWS, size=ROW_COL_SIZE, key=ROW_KEY)],
+                 [sg.Input(WELL_NUMBER_OF_COLS, size=ROW_COL_SIZE, key=COL_KEY)]
+                 ]
+
+    top_left_layout = [[sg.Text("X:"), sg.Input("1.00", size=(7,1)),
+                        sg.Text("Y:"), sg.Input("1.00", size=(7,1)),
+                        sg.Text("Z:"), sg.Input("1.00", size=(7,1)),
+                        sg.Button("Get Loc", key=TOP_LEFT_KEY)]]
+    bottom_left_layout = [[sg.Text("X:"), sg.Input("1.00", size=(7,1)),
+                           sg.Text("Y:"), sg.Input("1.00", size=(7,1)),
+                           sg.Text("Z:"), sg.Input("1.00", size=(7,1)),
+                           sg.Button("Get Loc", key=BOTTOM_LEFT_KEY)]]
+
+    corner_left = [[sg.Frame("Top-Left", top_left_layout)],
+                   [sg.Frame("Bottom-Left", bottom_left_layout)]
+                   ]
+
+    corner_right = [[sg.Text("Top-Right")],
+                    [sg.Input("X:1, Y:1, Z:1", size=CORNER_INPUT_SIZE, key=TOP_RIGHT_INPUT),
+                     sg.Button("Set Loc", key=TOP_RIGHT_KEY)],
+                    [sg.HorizontalSeparator()],
+                    [sg.Text("Bottom-Right")],
+                    [sg.Input("X:1, Y:1, Z:1", size=CORNER_INPUT_SIZE, key=BOTTOM_RIGHT_INPUT),
+                     sg.Button("Set Loc", key=BOTTOM_RIGHT_KEY)]
+                    ]
+
+    layout = [[sg.Text("Well Plate Locations Generator")],
+              [sg.Text("To get all well plate locations, follow the steps below:")],
+              [sg.HorizontalSeparator()],
+              [sg.Text("Step 1: Input number of rows and columns of well plate.")],
+              [sg.Column(dim_left), sg.Column(dim_right)],
+              [sg.HorizontalSeparator()],
+              [sg.Text("Step 2: Move camera around, click on 'Set Loc' at each corner of well plate.")],
+              [sg.Column(corner_left), sg.VerticalSeparator(), sg.Column(corner_right)],
+              [sg.HorizontalSeparator()],
+              [sg.Text("Step 3: Choose Folder to save Locations File.")],
+              [sg.Text("Save Folder"), sg.Input(key=SAVE_FOLDER_KEY), sg.FolderBrowse()],
+              [sg.HorizontalSeparator()],
+              [sg.Text("Step 4: Create Well Path File")],
+              [sg.Button(BUTTON_SNAKE_PATTERN_LOCATION)]
+              ]
+
+    return layout
+
 # Main Function
 
 def main():
