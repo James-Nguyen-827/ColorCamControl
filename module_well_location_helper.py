@@ -47,7 +47,8 @@ RAD_MINUS_ONE = "-RAD MINUS_ONE-"
 RAD_PLUS_ONE = "-RAD PLUS ONE-"
 RAD_PLUS_TEN = "-RAD PLUS TEN-"
 
-CIRCLE_EVENT_LIST = [RAD_MINUS_TEN, RAD_MINUS_ONE, RAD_PLUS_ONE, RAD_PLUS_TEN]
+COARSE_STEP = 1
+CIRCLE_EVENT_LIST = [RAD_MINUS_ONE, RAD_PLUS_ONE]
 
 # Crosshair preview display size (width, height)
 CROSSHAIR_PREVIEW_RES = (640, 480)
@@ -224,28 +225,6 @@ def update_color(event, values, window):
 
 def event_manager(event, values, window, camera, camera_lock=None):
     
-    # if event in CIRCLE_EVENT_LIST:
-    #     # print("Circle event detected")
-    #     # update_circle(event, values, window, camera)
-    #     update_line_thickness(values)
-    #     update_circle(event, values, window)
-    #
-    # if event == LOAD_IMAGE:
-    #     # print(f"Pressed: {LOAD_IMAGE}")
-    #
-    #     # Update Line Thickness
-    #     update_line_thickness(values)
-    #
-    #     update_circle(event, values, window)
-    #
-    #     # Preview On/Off Test
-    #     # window[PREVIEW_ON_KEY].update(True)
-    #     # draw_on_image()
-
-    # if event in CIRCLE_EVENT_LIST or event == LOAD_IMAGE:
-    #     update_line_thickness(values)
-    #     update_circle(event, values, window)
-
     if event == COLOR_CHOOSER_KEY:
         update_color(event, values, window)
 

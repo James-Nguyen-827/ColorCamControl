@@ -1581,7 +1581,15 @@ def main():
                      [sg.Button(START_EXPERIMENT, disabled=True), sg.Button(STOP_EXPERIMENT, disabled=True)]
                    ]
     
-    # Tab 2: Movement Tab
+    # Tab 2: Movement Tab + Crosshair overlay controls
+    crosshair_layout = [
+        [sg.Checkbox("Show Crosshair Overlay", key="--XHAIR_ON--", default=True)],
+        [sg.Button("-1", key="--XHAIR_DEC--", size=(4, 1)),
+         sg.Text("Radius (px):"),
+         sg.InputText("100", size=(5, 1), key="--XHAIR_RADIUS--", enable_events=True),
+         sg.Button("+1", key="--XHAIR_INC--", size=(4, 1))]
+    ]
+
     tab_2_layout = [ [sg.Text("", size=(3, 1)), sg.Button("Get Current Location", size=(20, 1)), sg.Button(SAVE_LOC_BUTTON)],
                      [sg.Radio(RELATIVE_TENTH_TEXT, RADIO_GROUP, default=False, key=RELATIVE_TENTH_KEY),
                         sg.Radio(RELATIVE_ONE_TEXT, RADIO_GROUP, default=True, key=RELATIVE_ONE_KEY),
@@ -1591,6 +1599,7 @@ def main():
                      [sg.Button(X_MINUS, size=(10, 1)), sg.Button(X_PLUS, size=(10, 1))],
                      [sg.Text("", size=(5, 1)), sg.Button(Y_MINUS, size=(10, 1)), sg.Text("", size=(5, 1)), sg.Button(Z_PLUS, size=(5, 1))],
                      [sg.HorizontalSeparator()],
+                     [sg.Frame("Crosshair", crosshair_layout)],
                      [sg.Text("Input GCODE (e.g. G0X0Y50):")],
                      [sg.InputText(size=(30, 1), key="-GCODE_INPUT-"), sg.Button("Run", size=(5, 1)), sg.Button("Clear", size=(5, 1))]
                    ]
@@ -1632,8 +1641,6 @@ def main():
                      [sg.Button(START_PREVIEW), sg.Button(STOP_PREVIEW)]
                    ]
     
-    tab_6_layout = WL.get_cross_hair_layout()
-    
     # TABs Layout (New, Experimental
     # TODO: Put in Pic/Video Button, test them out.
     layout = [ [sg.Image(filename='', key='-IMAGE-')],
@@ -1641,8 +1648,7 @@ def main():
                               sg.Tab("Tab 2 (Mvmt)", tab_2_layout),
                               sg.Tab("Tab 3 (CAM)", tab_3_layout),
                               sg.Tab("Tab 4 (Z Stack)", tab_4_layout),
-                              sg.Tab("Tab 5 (Camera Preview)", tab_5_layout),
-                              sg.Tab("Tab 6 (Loc Helper)", tab_6_layout)]])
+                              sg.Tab("Tab 5 (Camera Preview)", tab_5_layout)]])
                ],
                [sg.Button("Pic"), sg.Button("Vid"), sg.Button("Pic x 10")]
              ]
