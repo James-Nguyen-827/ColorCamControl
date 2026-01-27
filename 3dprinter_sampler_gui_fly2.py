@@ -1585,13 +1585,22 @@ def main():
          sg.Button(RESUME_EXPERIMENT, disabled=True), sg.Button(STOP_EXPERIMENT, disabled=True)]
     ]
     
-    # Tab 2: Movement Tab + Crosshair overlay controls
+    # Tab 2: Movement Tab + Crosshair overlay + Corner capture
     crosshair_layout = [
         [sg.Checkbox("Show Crosshair Overlay", key="--XHAIR_ON--", default=True)],
         [sg.Button("-1", key="--XHAIR_DEC--", size=(4, 1)),
          sg.Text("Radius (px):"),
          sg.InputText("100", size=(5, 1), key="--XHAIR_RADIUS--", enable_events=True),
          sg.Button("+1", key="--XHAIR_INC--", size=(4, 1))]
+    ]
+
+    corner_layout = [
+        [sg.Text("Row/Col:"), sg.Input("8", size=(4,1), key="--NUM_ROWS--"), sg.Input("12", size=(4,1), key="--NUM_COLS--")],
+        [sg.Text("A1:"), sg.Input("", size=(20,1), key="--A1_COORD--"), sg.Button("Set A1", key="--SET_A1--")],
+        [sg.Text("Amax:"), sg.Input("", size=(20,1), key="--AMAX_COORD--"), sg.Button("Set Amax", key="--SET_AMAX--")],
+        [sg.Text("M1:"), sg.Input("", size=(20,1), key="--M1_COORD--"), sg.Button("Set M1", key="--SET_M1--")],
+        [sg.Text("Mmax:"), sg.Input("", size=(20,1), key="--MMAX_COORD--"), sg.Button("Set Mmax", key="--SET_MMAX--")],
+        [sg.Button("Generate Snake CSV", key="--GEN_SNAKE--")]
     ]
 
     tab_2_layout = [ [sg.Text("", size=(3, 1)), sg.Button("Get Current Location", size=(20, 1)), sg.Button(SAVE_LOC_BUTTON)],
@@ -1604,6 +1613,7 @@ def main():
                      [sg.Text("", size=(5, 1)), sg.Button(Y_MINUS, size=(10, 1)), sg.Text("", size=(5, 1)), sg.Button(Z_PLUS, size=(5, 1))],
                      [sg.HorizontalSeparator()],
                      [sg.Frame("Crosshair", crosshair_layout)],
+                     [sg.Frame("Corners (csv coords)", corner_layout)],
                      [sg.Text("Input GCODE (e.g. G0X0Y50):")],
                      [sg.InputText(size=(30, 1), key="-GCODE_INPUT-"), sg.Button("Run", size=(5, 1)), sg.Button("Clear", size=(5, 1))]
                    ]
@@ -1644,9 +1654,7 @@ def main():
                [sg.TabGroup([[sg.Tab("Tab 1 (Exp)", tab_1_layout, key="-TAB_1_KEY"),
                               sg.Tab("Tab 2 (Mvmt)", tab_2_layout),
                               sg.Tab("Tab 3 (CAM)", tab_3_layout),
-                              sg.Tab("Tab 4 (Z Stack)", tab_4_layout),
-                              sg.Tab("Tab 5 (Camera Preview)", tab_5_layout),
-                              sg.Tab("Tab 6 (Well Calc)", WLC.get_layout())]])
+                              sg.Tab("Tab 4 (Z Stack)", tab_4_layout)]])
                ],
                [sg.Button("Pic"), sg.Button("Vid"), sg.Button("Pic x 10")]
              ]
