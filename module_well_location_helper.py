@@ -168,21 +168,22 @@ def create_crosshair_overlay(camera, radius, thickness, color_bgr, alpha, previe
     w_pad = int((w + 31) // 32 * 32)
     h_pad = int((h + 15) // 16 * 16)
 
-    overlay_img = np.zeros((h_pad, w_pad, 4), dtype=np.uint8)
+    # Build a single-channel mask, then set RGB manually to avoid channel order confusion
+    mask = np.zeros((h_pad, w_pad), dtype=np.uint8)
 
     center_x = w // 2
     center_y = h // 2
 
-    # Draw on the visible region; padding remains transparent
-    cv2.line(overlay_img, (0, center_y), (w, center_y), color_bgr, thickness, lineType=cv2.LINE_AA)
-    cv2.line(overlay_img, (center_x, 0), (center_x, h), color_bgr, thickness, lineType=cv2.LINE_AA)
-    cv2.circle(overlay_img, (center_x, center_y), radius, color_bgr, thickness, lineType=cv2.LINE_AA)
+    cv2.line(mask, (0, center_y), (w, center_y), 255, thickness, lineType=cv2.LINE_AA)
+    cv2.line(mask, (center_x, 0), (center_x, h), 255, thickness, lineType=cv2.LINE_AA)
+    cv2.circle(mask, (center_x, center_y), radius, 255, thickness, lineType=cv2.LINE_AA)
 
-    # Set alpha for non-zero pixels
-    alpha_channel = overlay_img[:, :, 3]
-    mask = (overlay_img[:, :, :3].sum(axis=2) > 0)
-    alpha_channel[mask] = alpha
-    overlay_img[:, :, 3] = alpha_channel
+    r, g, b = color_bgr[::-1]  # convert BGR to RGB
+    overlay_img = np.zeros((h_pad, w_pad, 4), dtype=np.uint8)
+    overlay_img[..., 0][mask == 255] = r
+    overlay_img[..., 1][mask == 255] = g
+    overlay_img[..., 2][mask == 255] = b
+    overlay_img[..., 3][mask == 255] = alpha
 
     buf = overlay_img.tobytes()
 
