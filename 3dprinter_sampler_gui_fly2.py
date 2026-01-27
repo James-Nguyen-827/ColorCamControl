@@ -1978,7 +1978,8 @@ def main():
             values["--XHAIR_RADIUS--"] = str(current_rad)
             if values.get("--XHAIR_ON--", True):
                 # Update overlay on preview
-                preview_rect = (PREVIEW_LOC_X, PREVIEW_LOC_Y + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+                x_win_preview, y_win_preview = get_window_location_from_pid(preview_win_id)
+                preview_rect = (x_win_preview, y_win_preview + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
                 crosshair_overlay = WL.create_crosshair_overlay(
                     camera,
                     radius=current_rad,
@@ -2000,7 +2001,8 @@ def main():
                     current_rad = int(values.get("--XHAIR_RADIUS--", WL.CIRCLE_RADIUS))
                 except (TypeError, ValueError):
                     current_rad = WL.CIRCLE_RADIUS
-                preview_rect = (PREVIEW_LOC_X, PREVIEW_LOC_Y + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
+                x_win_preview, y_win_preview = get_window_location_from_pid(preview_win_id)
+                preview_rect = (x_win_preview, y_win_preview + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
                 crosshair_overlay = WL.create_crosshair_overlay(
                     camera,
                     radius=current_rad,
