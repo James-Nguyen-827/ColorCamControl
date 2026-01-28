@@ -1572,8 +1572,10 @@ def main():
     time_layout = ET.get_time_layout()
     tab_1_layout = [
         [sg.Text(OPEN_CSV_PROMPT),
-         sg.Input(default_text=os.path.join(os.getcwd(), "testing", "Well_Location", "snake_path.csv")),
-         sg.FileBrowse(initial_folder=os.path.join(os.getcwd(),"testing","Well_Location"), key=OPEN_CSV_FILEBROWSE_KEY)],
+         sg.Input(default_text=os.path.join(os.getcwd(), "testing", "Well_Location", "snake_path.csv"),
+                  key=OPEN_CSV_FILEBROWSE_KEY, size=(45,1)),
+         sg.FileBrowse(initial_folder=os.path.join(os.getcwd(),"testing","Well_Location"),
+                       target=OPEN_CSV_FILEBROWSE_KEY)],
         *time_layout,
         [sg.Text(EXP_RADIO_PROMPT)],
         [sg.Radio(EXP_RADIO_PIC_TEXT, EXP_RADIO_GROUP, default=True, key=EXP_RADIO_PIC_KEY),
