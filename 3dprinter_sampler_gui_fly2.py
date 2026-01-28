@@ -1538,13 +1538,9 @@ def main():
         print(f"Folder does not exist, making directory: {TEMP_FOLDER}")
 
     # Make newline be blank, prevents extra empty lines from happening
-    f = open(TEMP_FULL_PATH, 'w', newline="")
-    writer = csv.writer(f)
-
-    # Create headers
-    headers = ["X", "Y", "Z"]
-    writer.writerow(headers)
-    f.close()
+    with open(TEMP_FULL_PATH, 'w', newline="") as f:
+        writer = csv.writer(f)
+        writer.writerow(["X", "Y", "Z"])
     
     # === Camera Preview Startup ===
     global PREVIOUS_CAMERA_PREVIEW_X, PREVIOUS_CAMERA_PREVIEW_Y
