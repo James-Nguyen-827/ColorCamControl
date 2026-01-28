@@ -1976,7 +1976,6 @@ def main():
                 print("No snake_path.csv found yet; generate first.")
                 continue
             # Reload corners/rows/cols from existing file length
-            import csv
             with open(last_snake_csv, newline="") as f:
                 reader = csv.reader(f)
                 rows_list = list(reader)
