@@ -1596,7 +1596,8 @@ def main():
     ]
 
     corner_layout = [
-        [sg.Text("Rows/Cols:"), sg.Input("6", size=(4,1), key="--NUM_ROWS--"), sg.Input("8", size=(4,1), key="--NUM_COLS--")],
+        [sg.Text("Rows/Cols:"), sg.Input("6", size=(4,1), key="--NUM_ROWS--"), sg.Input("8", size=(4,1), key="--NUM_COLS--"),
+         sg.Text("Z Override:"), sg.Input("", size=(6,1), key="--Z_OVERRIDE--")],
         [sg.Text("Top-Left:"), sg.Input("", size=(20,1), key="--TL_COORD--"), sg.Button("Set TL", key="--SET_TL--")],
         [sg.Text("Top-Right:"), sg.Input("", size=(20,1), key="--TR_COORD--"), sg.Button("Set TR", key="--SET_TR--")],
         [sg.Text("Bottom-Left:"), sg.Input("", size=(20,1), key="--BL_COORD--"), sg.Button("Set BL", key="--SET_BL--")],
@@ -1604,7 +1605,7 @@ def main():
         [sg.Button("Generate Snake CSV", key="--GEN_SNAKE--")]
     ]
 
-    tab_2_layout = [ [sg.Text("", size=(3, 1)), sg.Button("Get Current Location", size=(20, 1)), sg.Button(SAVE_LOC_BUTTON)],
+    tab_2_layout = [ [sg.Text("", size=(3, 1)), sg.Button("Get Current Location", size=(20, 1)), sg.Button("Change Plate", key="--CHANGE_PLATE--", size=(12,1)), sg.Button(SAVE_LOC_BUTTON)],
                      [sg.Radio(RELATIVE_TENTH_TEXT, RADIO_GROUP, default=False, key=RELATIVE_TENTH_KEY),
                         sg.Radio(RELATIVE_ONE_TEXT, RADIO_GROUP, default=True, key=RELATIVE_ONE_KEY),
                         sg.Radio(RELATIVE_TEN_TEXT, RADIO_GROUP, default=False, key=RELATIVE_TEN_KEY)
@@ -1892,7 +1893,7 @@ def main():
             print("===================================")
             print("You pressed Get Current Location!")
             get_current_location2()
-            """
+        """
             printer.run_gcode("M114")
             serial_string = printer.get_serial_data()
             if GCL.does_location_exist_m114(serial_string) == True:
@@ -1949,6 +1950,15 @@ def main():
         elif event == SAVE_LOC_BUTTON:
             print(f"You pressed: {SAVE_LOC_BUTTON}")
             save_current_location()
+        elif event == "--CHANGE_PLATE--":
+            # Move plate forward in Y to clear space for swapping
+            try:
+                target_y = 230
+                printer.run_gcode(f"G90")
+                printer.run_gcode(f"G0Y{target_y}")
+                print(f"Moved plate to Y={target_y} for plate change.")
+            except Exception as e:
+                print(f"Failed to move for plate change: {e}")
         # Corner capture buttons
         elif event in ["--SET_TL--", "--SET_TR--", "--SET_BL--", "--SET_BR--"]:
             loc = get_current_location2()
@@ -1976,9 +1986,17 @@ def main():
             if missing:
                 print(f"Missing corners: {missing}")
                 continue
+            z_override = None
+            z_str = values.get("--Z_OVERRIDE--", "").strip()
+            if len(z_str):
+                try:
+                    z_override = float(z_str)
+                except ValueError:
+                    print("Z Override must be a number")
+                    continue
             default_dir = os.path.join(os.getcwd(), "testing", "Well_Location")
             outfile = os.path.join(default_dir, "snake_path.csv")
-            generate_snake_csv(corners, rows, cols, outfile)
+            generate_snake_csv(corners, rows, cols, outfile, z_override=z_override)
             print(f"Snake path saved to {outfile}")
         elif event == START_PREVIEW:
             

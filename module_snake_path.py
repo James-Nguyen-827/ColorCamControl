@@ -17,7 +17,7 @@ def bilinear_point(tl, tr, bl, br, r_ratio, c_ratio):
     return {"X": x, "Y": y, "Z": z}
 
 
-def generate_snake_csv(corners, rows, cols, outfile):
+def generate_snake_csv(corners, rows, cols, outfile, z_override=None):
     tl = corners["TL"]; tr = corners["TR"]; bl = corners["BL"]; br = corners["BR"]
     with open(outfile, "w", newline="") as f:
         writer = csv.writer(f)
@@ -29,5 +29,7 @@ def generate_snake_csv(corners, rows, cols, outfile):
             for c in col_range:
                 c_ratio = c / (cols - 1) if cols > 1 else 0
                 pt = bilinear_point(tl, tr, bl, br, r_ratio, c_ratio)
+                if z_override is not None:
+                    pt["Z"] = z_override
                 writer.writerow([idx, f"{pt['X']:.2f}", f"{pt['Y']:.2f}", f"{pt['Z']:.2f}"])
                 idx += 1
