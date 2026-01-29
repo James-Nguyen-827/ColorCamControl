@@ -421,7 +421,7 @@ def run_experiment(event, values, thread_event, camera, preview_win_id):
     is_running_experiment = False
 
 
-def run_experiment2(event, values, thread_event, camera, preview_win_id):
+def run_experiment2(event, values, thread_event, pause_event, camera, preview_win_id):
     """
     Description: Runs experiment to take a picture, video, or preview (do nothing)
     
@@ -473,6 +473,9 @@ def run_experiment2(event, values, thread_event, camera, preview_win_id):
     # Create While loop to check if thread_event is not set (closing)
     count_run = 0
     while not thread_event.is_set():
+        # Honor pause requests
+        while pause_event.is_set() and not thread_event.is_set():
+            time.sleep(0.1)
         
         # TODO: Put in the rest of the code for Pic, Video, Preview from 3dprinter_start_experiment or prepare_experiment
         
@@ -485,6 +488,9 @@ def run_experiment2(event, values, thread_event, camera, preview_win_id):
             well_number = 1
             
             for location in gcode_string_list:
+                # Respect pause while iterating wells
+                while pause_event.is_set() and not thread_event.is_set():
+                    time.sleep(0.1)
                 if thread_event.is_set():
                     break
                 printer.run_gcode(location)
@@ -1623,14 +1629,24 @@ def main():
                    ]
     
     # Setup Tab/GUI Layout
-    tab_3_layout = [ [sg.Text("Camera Rotation (in Degrees):"), sg.InputText("180", size=(10, 1), enable_events=True, key=CAMERA_ROTATION_KEY)],
-                     [sg.Text("Set Image Capture Resolution:")],
-                     [sg.Text("Pic Width (in pixels):"), sg.InputText(PIC_WIDTH, size=(10, 1), enable_events=True, key=PIC_WIDTH_KEY)],
-                     [sg.Text("Pic Height (in pixels):"),sg.InputText(PIC_HEIGHT, size=(10, 1), enable_events=True, key=PIC_HEIGHT_KEY)],
-                     [sg.Button(UPDATE_CAMERA_TEXT)],
-                     [sg.Text("Exposure Mode:"),sg.InputText(EXPOSURE_MODE, size=(10, 1), enable_events=True, key=EXPOSURE_MODE_KEY),
-                      sg.Text("Expo Settle Time (in sec):"), sg.InputText(EXPO_SETTLE_TIME, size=(5, 1),key=EXPO_SETTLE_TIME_KEY), sg.Button(SET_EXPOSURE_MODE)]
-                   ]
+    tab_3_layout = [
+        [sg.Text("Camera Rotation (in Degrees):"), sg.InputText("180", size=(10, 1), enable_events=True, key=CAMERA_ROTATION_KEY)],
+        [sg.Text("Set Image Capture Resolution:")],
+        [sg.Text("Pic Width (in pixels):"), sg.InputText(PIC_WIDTH, size=(10, 1), enable_events=True, key=PIC_WIDTH_KEY)],
+        [sg.Text("Pic Height (in pixels):"), sg.InputText(PIC_HEIGHT, size=(10, 1), enable_events=True, key=PIC_HEIGHT_KEY)],
+        [sg.Button(UPDATE_CAMERA_TEXT)],
+        [sg.Text("Exposure Mode:"), sg.InputText(EXPOSURE_MODE, size=(10, 1), enable_events=True, key=EXPOSURE_MODE_KEY),
+         sg.Text("Expo Settle Time (in sec):"), sg.InputText(EXPO_SETTLE_TIME, size=(5, 1), key=EXPO_SETTLE_TIME_KEY), sg.Button(SET_EXPOSURE_MODE)],
+        [sg.HorizontalSeparator()],
+        [sg.Text("Preview Location (e.g. x = 0, y = 0):")],
+        [sg.Text("x:"), sg.InputText("0", size=(8, 1), enable_events=True, key=PREVIEW_LOC_X_KEY),
+         sg.Text("y:"), sg.InputText("36", size=(8, 1), enable_events=True, key=PREVIEW_LOC_Y_KEY)],
+        [sg.Text("Preview Video Size (e.g. width = 640, height = 480):")],
+        [sg.Text("width:"), sg.InputText("640", size=(8, 1), enable_events=True, key=PREVIEW_WIDTH_KEY),
+         sg.Text("height:"), sg.InputText("480", size=(8, 1), enable_events=True, key=PREVIEW_HEIGHT_KEY)],
+        [sg.Text("Opacity, or Alpha (range 0 (invisible) to 255 (opaque)):"), sg.InputText("255", size=(5, 1), enable_events=True, key=ALPHA_KEY)],
+        [sg.Button(START_PREVIEW), sg.Button(STOP_PREVIEW)]
+    ]
     
     # Z Stack Tab
     tab_4_layout = [ [sg.Text("Input Z Stack Parameters (Units are in mm):")],
@@ -1639,17 +1655,6 @@ def main():
                         sg.Text("Z Inc:"),sg.InputText("0.5", size=(7, 1), enable_events=True, key=Z_INC_KEY)],
                        [sg.Text("Save Folder Location:"), sg.In(size=(25,1), enable_events=True, key=SAVE_FOLDER_KEY), sg.FolderBrowse()],
                        [sg.Button(START_Z_STACK_CREATION_TEXT)]
-                   ]
-    
-    # Camera Preview Tab
-    tab_5_layout = [ [sg.Text("Preview Location (e.g. x = 0, y = 0):")],
-                     [sg.Text("x:"), sg.InputText("0", size=(8, 1), enable_events=True, key=PREVIEW_LOC_X_KEY),
-                      sg.Text("y:"), sg.InputText("36", size=(8, 1), enable_events=True, key=PREVIEW_LOC_Y_KEY)],
-                     [sg.Text("Preview Video Size (e.g. width = 640, height = 480):")],
-                     [sg.Text("width:"), sg.InputText("640", size=(8, 1), enable_events=True, key=PREVIEW_WIDTH_KEY),
-                      sg.Text("height:"), sg.InputText("480", size=(8, 1), enable_events=True, key=PREVIEW_HEIGHT_KEY)],
-                     [sg.Text("Opacity, or Alpha (range 0 (invisible) to 255 (opaque)):"), sg.InputText("255", size=(5, 1), enable_events=True, key=ALPHA_KEY)],
-                     [sg.Button(START_PREVIEW), sg.Button(STOP_PREVIEW)]
                    ]
     
     # TABs Layout (New, Experimental
@@ -1691,6 +1696,7 @@ def main():
     
     # Initialize threading event (Allows you to stop the thread)
     thread_event = threading.Event()
+    pause_event = threading.Event()
 
     crosshair_overlay = None
     corners = {"TL": None, "TR": None, "BL": None, "BR": None}
@@ -1819,6 +1825,7 @@ def main():
             # Set is_running_experiment to True, we are now running an experiment
             is_running_experiment = True
             thread_event.clear()
+            pause_event.clear()
             
             # Uncomment to see your CSV File (is it the correct path?)
             # print("CSV File:", values[OPEN_CSV_FILEBROWSE_KEY])
@@ -1827,9 +1834,15 @@ def main():
             window[START_EXPERIMENT].update(disabled=True)
             # Enable "Stop Experiment" Button
             window[STOP_EXPERIMENT].update(disabled=False)
+            window[PAUSE_EXPERIMENT].update(disabled=False)
+            window[RESUME_EXPERIMENT].update(disabled=True)
             
             # Create actual experiment_thread
-            experiment_thread = threading.Thread(target=run_experiment2, args=(event, values, thread_event, camera, preview_win_id), daemon=True)
+            experiment_thread = threading.Thread(
+                target=run_experiment2,
+                args=(event, values, thread_event, pause_event, camera, preview_win_id),
+                daemon=True
+            )
             experiment_thread.start()
             
             # Create Unique Folder, Get that Unique Folder's Name
@@ -1846,12 +1859,27 @@ def main():
             window[START_EXPERIMENT].update(disabled=False)
             # Disable "Stop Experiment" Button
             window[STOP_EXPERIMENT].update(disabled=True)
+            window[PAUSE_EXPERIMENT].update(disabled=True)
+            window[RESUME_EXPERIMENT].update(disabled=True)
             
             # Stop thread, set prepares stopping
             thread_event.set()
+            pause_event.clear()
             
             # Stop experiemnt_thread
             experiment_thread.join(timeout=1)
+        
+        elif event == PAUSE_EXPERIMENT:
+            print("You pressed Pause Experiment")
+            pause_event.set()
+            window[PAUSE_EXPERIMENT].update(disabled=True)
+            window[RESUME_EXPERIMENT].update(disabled=False)
+        
+        elif event == RESUME_EXPERIMENT:
+            print("You pressed Resume Experiment")
+            pause_event.clear()
+            window[PAUSE_EXPERIMENT].update(disabled=False)
+            window[RESUME_EXPERIMENT].update(disabled=True)
             
         elif event == "Pic":
             print("You Pushed Pic Button")
