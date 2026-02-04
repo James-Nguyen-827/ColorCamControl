@@ -14,7 +14,7 @@ import yaml
 # Placeholder Constants
 # Monoprice Maker Select 3D Printer V2, Lab 3D Printer
 DEVICE_PATH = '/dev/ttyUSB0'
-BAUDRATE = 115200     # 115200: for Marlin Firmware
+BAUDRATE = 250000     # 115200: for Marlin Firmware
 TIMEOUT_TIME = 1      # Wait 1 second
 REBOOT_WAIT_TIME = 5  # 5 seconds
 
