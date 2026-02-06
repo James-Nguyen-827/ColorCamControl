@@ -106,10 +106,10 @@ def create_and_get_folder_path():
         folder_path_complete = "{}_Pictures_{}".format(folder_path, folder_name_suffix)
         print("Taking Pictures Only")
 
-    # Check if folder exists, if not, create it
+    # Check if folder exists, if not, create it (and any missing parent dirs)
     if not os.path.isdir(folder_path_complete):
         print("Folder Does NOT exist! Making New Folder")
-        os.mkdir(folder_path_complete)
+        os.makedirs(folder_path_complete, exist_ok=True)
     else:
         print("Folder Exists")
 
@@ -136,10 +136,10 @@ def create_and_get_folder_path2(dest_folder):
         folder_path_complete = "{}_Pictures_{}".format(folder_path, folder_name_suffix)
         print("Taking Pictures Only")
 
-    # Check if folder exists, if not, create it
+    # Check if folder exists, if not, create it (and any missing parent dirs)
     if not os.path.isdir(folder_path_complete):
         print("Folder Does NOT exist! Making New Folder")
-        os.mkdir(folder_path_complete)
+        os.makedirs(folder_path_complete, exist_ok=True)
     else:
         print("Folder Exists")
 
