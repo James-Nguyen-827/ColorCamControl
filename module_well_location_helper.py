@@ -185,12 +185,19 @@ def create_crosshair_overlay(camera, radius, thickness, color_bgr, alpha, previe
     overlay_img[..., 2][mask == 255] = b
     overlay_img[..., 3][mask == 255] = alpha
 
-    buf = overlay_img.tobytes()
+    # Picamera2 uses set_overlay(numpy array); legacy PiCamera uses add_overlay(bytes, ...).
+    is_picamera2 = hasattr(camera, 'set_overlay') and not hasattr(camera, 'add_overlay')
 
     def _apply():
-        if existing_overlay:
-            camera.remove_overlay(existing_overlay)
-        return camera.add_overlay(buf, size=(w_pad, h_pad), layer=3, alpha=alpha, fullscreen=False, window=(x, y, w, h), format='rgba')
+        if is_picamera2:
+            # Picamera2: set_overlay expects (height, width, 4) RGBA numpy array; clear with set_overlay(None).
+            camera.set_overlay(overlay_img)
+            return True  # Caller should use camera.set_overlay(None) to remove.
+        else:
+            if existing_overlay:
+                camera.remove_overlay(existing_overlay)
+            buf = overlay_img.tobytes()
+            return camera.add_overlay(buf, size=(w_pad, h_pad), layer=3, alpha=alpha, fullscreen=False, window=(x, y, w, h), format='rgba')
 
     if camera_lock:
         with camera_lock:

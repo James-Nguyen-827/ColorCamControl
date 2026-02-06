@@ -1774,7 +1774,10 @@ def main():
                             current_rad = WL.CIRCLE_RADIUS
                         if crosshair_overlay:
                             with CAMERA_LOCK:
-                                camera.remove_overlay(crosshair_overlay)
+                                if hasattr(camera, 'remove_overlay'):
+                                    camera.remove_overlay(crosshair_overlay)
+                                else:
+                                    camera.set_overlay(None)
                         preview_rect = (x_win_preview, y_win_preview + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT)
                         crosshair_overlay = WL.create_crosshair_overlay(
                             camera,
@@ -2103,7 +2106,10 @@ def main():
             else:
                 if crosshair_overlay:
                     with CAMERA_LOCK:
-                        camera.remove_overlay(crosshair_overlay)
+                        if hasattr(camera, 'remove_overlay'):
+                            camera.remove_overlay(crosshair_overlay)
+                        else:
+                            camera.set_overlay(None)
                     crosshair_overlay = None
         # Well location calculator tab events
         if event in WLC.WELL_LOCATION_EVENTS or event in [WLC.ROW_KEY, WLC.COL_KEY, WLC.SAVE_FOLDER_KEY]:
@@ -2129,7 +2135,10 @@ def main():
             else:
                 if crosshair_overlay:
                     with CAMERA_LOCK:
-                        camera.remove_overlay(crosshair_overlay)
+                        if hasattr(camera, 'remove_overlay'):
+                            camera.remove_overlay(crosshair_overlay)
+                        else:
+                            camera.set_overlay(None)
                     crosshair_overlay = None
         
         # print("You entered ", values[0])
