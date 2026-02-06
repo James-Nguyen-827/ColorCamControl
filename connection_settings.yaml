@@ -30,6 +30,7 @@ mht:
       # timeout and reboot times are in seconds
       timeout_time: 1
       reboot_wait_time: 8
+      camera_rotation: 180
       # maximum dimensions in mm, and travel speed in mm/sec
       max:
         x: 200
