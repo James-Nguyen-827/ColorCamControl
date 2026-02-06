@@ -45,24 +45,6 @@ Changelog
 
 """
 
-# --- Qt platform plugin fix (must run before any Qt-using imports) ---
-# OpenCV (cv2) bundles its own Qt plugins; Qt then loads them and fails with
-# "Could not load the Qt platform plugin xcb" on Linux. Picamera2 preview needs
-# the system Qt. Point Qt at system plugin path so preview works.
-import os
-import sys
-if sys.platform == "linux":
-    _qt_platforms = (
-        "/usr/lib/aarch64-linux-gnu/qt5/plugins/platforms",   # RPi 64-bit
-        "/usr/lib/arm-linux-gnueabihf/qt5/plugins/platforms",  # RPi 32-bit
-        "/usr/lib/x86_64-linux-gnu/qt5/plugins/platforms",
-    )
-    for _path in _qt_platforms:
-        if os.path.isdir(_path):
-            os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = _path
-            break
-# --------------------------------------------------------------------
-
 # Import FreeSimpleGUI, cv2, numpy, time libraries
 # Import picamera2 libraries (Raspberry Pi 4)
 

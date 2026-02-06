@@ -5,11 +5,8 @@
 FreeSimpleGUI>=4.0.0
 
 # Computer Vision and Image Processing
-opencv-python>=4.5.0
-# On Raspberry Pi, if you see "Could not load the Qt platform plugin xcb" when starting
-# the camera preview, the script sets QT_QPA_PLATFORM_PLUGIN_PATH to system Qt5. If that
-# still fails, try: pip uninstall opencv-python && pip install opencv-python-headless
-# (headless avoids bundled Qt; main GUI uses FreeSimpleGUI, not cv2 windows).
+# Use headless build to avoid Qt conflict with picamera2 preview on Raspberry Pi.
+opencv-python-headless>=4.5.0
 numpy>=1.19.0
 Pillow>=8.0.0
 
