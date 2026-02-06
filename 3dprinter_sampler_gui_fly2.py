@@ -1484,9 +1484,8 @@ def start_camera_preview(event, values, camera, preview_win_id):
     
     # Move Pseudo Window to input location too
     move_window_pid(preview_win_id, prev_loc_x, prev_loc_y - PREVIEW_WINDOW_OFFSET)
-    
-    camera.start_preview(alpha=alpha_val, fullscreen=False, window=(prev_loc_x, prev_loc_y, prev_width, prev_height))
-    
+    # Picamera2: use True to autodetect preview (DRM/QTGL/QT); kwargs are x, y, width, height (no alpha/fullscreen/window)
+    camera.start_preview(True, x=prev_loc_x, y=prev_loc_y, width=prev_width, height=prev_height)
     x_win, y_win = get_window_location_from_pid(preview_win_id)
     print(f"x_win:{x_win}, y_win:{y_win}")
 
@@ -2069,7 +2068,8 @@ def main():
                 PREVIEW_HEIGHT = prev_height
                 PREVIEW_ALPHA = alpha_val
                 move_window_pid(preview_win_id, prev_loc_x, prev_loc_y - PREVIEW_WINDOW_OFFSET)
-                camera.start_preview(alpha=alpha_val, fullscreen=False, window=(prev_loc_x, prev_loc_y, prev_width, prev_height))
+                # Picamera2: use True to autodetect preview; kwargs are x, y, width, height (no alpha/fullscreen/window)
+                camera.start_preview(True, x=prev_loc_x, y=prev_loc_y, width=prev_width, height=prev_height)
                 x_win, y_win = get_window_location_from_pid(preview_win_id)
                 print(f"x_win:{x_win}, y_win:{y_win}")
         elif event == STOP_PREVIEW:
