@@ -1439,12 +1439,14 @@ def set_exposure_mode(event, values, window, camera):
     
     # Now fix the values
     
-    # Manual exposure: set both ExposureTime and AnalogueGain (disables auto AGC/AEC per picamera2)
-    # Note: libcamera has no "ExposureMode" control; setting both locks manual exposure.
+    # Exposure Mode
+    # camera.framerate = 30
+    # picamera2 exposure controls
+    # Get current exposure time from metadata
     metadata = camera.capture_metadata()
     exposure_time = metadata.get("ExposureTime", 30901)
-    analogue_gain = metadata.get("AnalogueGain", 1.0)
-    camera.set_controls({"ExposureTime": exposure_time, "AnalogueGain": analogue_gain})
+    camera.set_controls({"ExposureTime": exposure_time})
+    camera.set_controls({"ExposureMode": 1})  # 1 = manual
     # Get current AWB gains from metadata
     colour_gains = metadata.get("ColourGains", (1.5, 1.8))
     camera.set_controls({"ColourGains": colour_gains})

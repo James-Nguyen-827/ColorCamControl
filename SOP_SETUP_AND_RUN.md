@@ -155,7 +155,7 @@ pip install -r requirements.txt
 
 This will install:
 - FreeSimpleGUI (GUI framework)
-- opencv-python (computer vision)
+- opencv-python-headless (computer vision; headless avoids Qt conflict with picamera2 preview)
 - numpy (numerical computing)
 - pyserial (serial communication)
 - PyYAML (configuration files)
@@ -164,7 +164,18 @@ This will install:
 - pandas (data processing)
 - Pillow (image processing)
 
-### Step 3: Verify picamera2 Installation
+### Step 3: Use OpenCV headless (fix Qt / camera preview conflict)
+
+If you have or had `opencv-python` installed, use the headless build so the camera preview works without Qt errors:
+
+```bash
+pip uninstall opencv-python -y
+pip install opencv-python-headless
+```
+
+If you install from `requirements.txt` only, you will get `opencv-python-headless` by default. Run the commands above if you see: *"Could not load the Qt platform plugin xcb"* when starting the camera preview.
+
+### Step 4: Verify picamera2 Installation
 
 ```bash
 python3 -c "from picamera2 import Picamera2; print('picamera2 is available')"
@@ -400,6 +411,17 @@ sudo apt install python3-dev build-essential
 ### Preview Window Issues
 
 **Note:** picamera2 preview handling differs from picamera1. Window positioning may not work exactly as before. Preview windows in picamera2 typically use DRM or Qt rendering, not X11 window coordinates.
+
+**Problem:** *"Could not load the Qt platform plugin xcb"* or *"This application failed to start because no Qt platform plugin could be initialized"* when starting the camera preview.
+
+Use the OpenCV headless package so Qt from OpenCV does not conflict with picamera2:
+
+```bash
+pip uninstall opencv-python -y
+pip install opencv-python-headless
+```
+
+Then run the application again. The main GUI uses FreeSimpleGUI and picamera2 for the camera; it does not need OpenCV’s GUI (e.g. `cv2.imshow`).
 
 ---
 
