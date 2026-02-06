@@ -1439,14 +1439,12 @@ def set_exposure_mode(event, values, window, camera):
     
     # Now fix the values
     
-    # Exposure Mode
-    # camera.framerate = 30
-    # picamera2 exposure controls
-    # Get current exposure time from metadata
+    # Manual exposure: set both ExposureTime and AnalogueGain (disables auto AGC/AEC per picamera2)
+    # Note: libcamera has no "ExposureMode" control; setting both locks manual exposure.
     metadata = camera.capture_metadata()
     exposure_time = metadata.get("ExposureTime", 30901)
-    camera.set_controls({"ExposureTime": exposure_time})
-    camera.set_controls({"ExposureMode": 1})  # 1 = manual
+    analogue_gain = metadata.get("AnalogueGain", 1.0)
+    camera.set_controls({"ExposureTime": exposure_time, "AnalogueGain": analogue_gain})
     # Get current AWB gains from metadata
     colour_gains = metadata.get("ColourGains", (1.5, 1.8))
     camera.set_controls({"ColourGains": colour_gains})
@@ -1740,7 +1738,9 @@ def main():
     while True:
         event, values = window.read(timeout=20)
         event_p, values_p = window_p.read(timeout=20)
-        
+        # Exit as soon as either window is closed so we never read from a closed window
+        if event == sg.WIN_CLOSED or event_p == sg.WIN_CLOSED:
+            break
         # Camera Preview Initial Startup
         # Setup if/else initial_startup condition
         # If initial startup,
@@ -1840,10 +1840,8 @@ def main():
                 window[START_EXPERIMENT].update(disabled=True)
         
         # ---- Main GUI Window If/elif chain ----
-        if event == sg.WIN_CLOSED:
-            break
         # Tab 1 (Experiment):
-        elif event == START_EXPERIMENT:
+        if event == START_EXPERIMENT:
             print("You pressed Start Experiment")
             
             # Set is_running_experiment to True, we are now running an experiment
@@ -2174,8 +2172,15 @@ def main():
     camera.stop()
     camera.close()
     
-    # Closing Window
-    window.close()
+    # Closing Windows (either may already be closed by user)
+    try:
+        window.close()
+    except Exception:
+        pass
+    try:
+        window_p.close()
+    except Exception:
+        pass
     
     # Closing 3D Printer Serial Connection
     printer.printer.close()
