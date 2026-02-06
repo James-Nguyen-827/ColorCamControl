@@ -75,6 +75,7 @@ sudo apt install -y \
     python3-pip \
     python3-venv \
     libcamera-dev \
+    libcamera-apps \
     libcap-dev \
     libatlas-base-dev \
     ffmpeg \
@@ -83,6 +84,8 @@ sudo apt install -y \
     libfmt-dev \
     libdrm-dev
 ```
+
+**Note:** `libcamera-apps` provides the camera test commands. On current Raspberry Pi OS the command is `rpicam-hello`; on older releases it may be `libcamera-hello`. If you get "command not found" when testing, install: `sudo apt install libcamera-apps`
 
 ---
 
@@ -200,12 +203,18 @@ If you get an error, ensure you used `--system-site-packages` when creating the 
 
 ### Step 3: Test Camera
 
+**If you get "command not found"**, install the camera apps package first:
 ```bash
-libcamera-hello --list-cameras
-libcamera-hello --timeout 5000
+sudo apt install libcamera-apps
 ```
 
-If the camera works, you should see a preview window.
+Then run (use `rpicam-hello` on current Raspberry Pi OS; older releases may use `libcamera-hello`):
+```bash
+rpicam-hello --list-cameras
+rpicam-hello --timeout 5000
+```
+
+If the camera works, you should see a preview window (or camera info from the first command).
 
 ---
 
@@ -319,10 +328,17 @@ deactivate
 
 ### Camera Issues
 
+**Problem:** `rpicam-hello` or `libcamera-hello`: command not found
+```bash
+# Install the libcamera-apps package (provides rpicam-hello / libcamera-hello)
+sudo apt install libcamera-apps
+```
+
 **Problem:** Camera not detected
 ```bash
-# Check camera connection
-libcamera-hello --list-cameras
+# Install libcamera-apps if you haven't, then check camera connection
+sudo apt install libcamera-apps
+rpicam-hello --list-cameras
 
 # Check if camera is enabled
 sudo raspi-config  # Interface Options → Camera

@@ -10,8 +10,8 @@ sudo apt update && sudo apt upgrade -y
 # Enable camera
 sudo raspi-config  # Interface Options → Camera → Enable
 
-# Install system dependencies
-sudo apt install -y python3-pip python3-venv libcamera-dev libcap-dev \
+# Install system dependencies (libcamera-apps provides rpicam-hello for testing)
+sudo apt install -y python3-pip python3-venv libcamera-dev libcamera-apps libcap-dev \
     libatlas-base-dev ffmpeg libopenjp2-7 libkms++-dev libfmt-dev libdrm-dev
 ```
 
@@ -45,8 +45,8 @@ source venv/bin/activate
 # Deactivate venv
 deactivate
 
-# Test camera
-libcamera-hello --timeout 5000
+# Test camera (rpicam-hello on current Pi OS; older: libcamera-hello)
+rpicam-hello --timeout 5000
 
 # Check serial devices
 ls -l /dev/ttyUSB* /dev/ttyACM*
@@ -59,7 +59,8 @@ sudo usermod -a -G dialout $USER
 ## Troubleshooting
 
 **Camera not working?**
-- Check: `libcamera-hello --list-cameras`
+- If "rpicam-hello" or "libcamera-hello: command not found": `sudo apt install libcamera-apps`
+- Check: `rpicam-hello --list-cameras`
 - Enable in raspi-config if needed
 
 **Serial port permission denied?**
