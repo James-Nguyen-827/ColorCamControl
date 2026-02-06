@@ -1502,9 +1502,13 @@ def main():
     
     # MHT: 270, Cell Sensor: 90
     # Lab stuff - Apply rotation transform (picamera2 uses Transform control: 0=0°, 1=90°, 2=180°, 3=270°)
+    # Note: Transform is not advertised by all sensors (e.g. imx708_wide); only set if available.
     transform_map = {0: 0, 90: 1, 180: 2, 270: 3}
     transform_value = transform_map.get(easy_rot % 360, 0)
-    camera.set_controls({"Transform": transform_value})
+    if "Transform" in camera.camera_controls:
+        camera.set_controls({"Transform": transform_value})
+    else:
+        print("Note: Transform control not available for this camera (rotation may need to be applied in software).")
     
     # Set Camera Settings:
     # Set Exposure mode (picamera2 uses different controls)
