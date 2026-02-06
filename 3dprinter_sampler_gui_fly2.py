@@ -168,8 +168,8 @@ START_Z_STACK_CREATION_TEXT = "Start Z Stack Creation"
 # --- Save a Location Constants ---
 SAVE_LOC_BUTTON = "Save Loc Button"
 
-# Create Temp file to store locations into
-TEMP_FOLDER = r"/home/pi/Projects/3dprinter_sampling/temp"
+# Create Temp file to store locations into (use current user's home so it works as pi or colorcam)
+TEMP_FOLDER = os.path.join(os.path.expanduser("~"), "Projects", "3dprinter_sampling", "temp")
 TEMP_FILE = r"temp_loc.csv"
 TEMP_FULL_PATH = os.path.join(TEMP_FOLDER, TEMP_FILE)
 
@@ -1548,7 +1548,7 @@ def main():
     # Create Temp file to store locations into
 
     if not os.path.isdir(TEMP_FOLDER):
-        os.mkdir(TEMP_FOLDER)
+        os.makedirs(TEMP_FOLDER, exist_ok=True)
         print(f"Folder does not exist, making directory: {TEMP_FOLDER}")
 
     # Make newline be blank, prevents extra empty lines from happening
