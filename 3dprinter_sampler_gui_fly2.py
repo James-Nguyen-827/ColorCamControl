@@ -820,16 +820,20 @@ def get_video(camera):
 
 
 def capture_still(camera, file_full_path):
-    """Safely capture a still by pausing preview and restoring resolution."""
+    """Safely capture a still by stopping camera, configuring for still, then restoring preview."""
     with CAMERA_LOCK:
-        # Note: picamera2 handles resolution via configuration
+        # Picamera2 requires camera to be stopped before configuring
+        camera.stop()
         # Configure for still capture with high resolution
         still_config = camera.create_still_configuration(main={"size": (PIC_WIDTH, PIC_HEIGHT)})
         camera.configure(still_config)
+        camera.start()
         camera.capture_file(file_full_path)
         # Restore preview configuration
+        camera.stop()
         preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
         camera.configure(preview_config)
+        camera.start()
 
 
 def get_picture(camera):
