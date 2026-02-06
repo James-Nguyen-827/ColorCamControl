@@ -143,10 +143,11 @@ def get_path_list_csv(csv_filename):
     # Create empty path_list variable
     path_list = []
 
-    # Use iterows to go through each row to extract x, y, and z
+    # Use iterrows to go through each row to extract x, y, and z
+    # Use .iloc: row is indexed by column names (e.g. X,Y,Z), not 0,1,2
     for row_index, row in dataframe.iterrows():
         # Place x, y, z values into a temp_list
-        temp_list = [row[X], row[Y], row[Z]]
+        temp_list = [row.iloc[X], row.iloc[Y], row.iloc[Z]]
 
         # Append temp list to path_list
         path_list.append(temp_list)
