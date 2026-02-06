@@ -51,7 +51,7 @@ RELATIVE_POS = "G91"
 
 # Which Project? Will influence which settings are loaded
 # PROJECT = "mht"
-PROJECT = "FlyCamV2"
+PROJECT = "mht"
 
 # Load YAML Settings
 with open("connection_settings.yaml") as file:
