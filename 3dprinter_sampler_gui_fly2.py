@@ -1465,8 +1465,10 @@ def set_white_balance(camera, red_gain=1.5, blue_gain=1.8, isAutoWhiteBalanceOn=
 
 def start_camera_preview(event, values, camera, preview_win_id):
     print("Starting Preview With Settings")
-    if camera.preview:
+    try:
         camera.stop_preview()
+    except Exception:
+        pass
     prev_width = int(values[PREVIEW_WIDTH_KEY])
     prev_height = int(values[PREVIEW_HEIGHT_KEY])
     prev_loc_x = int(values[PREVIEW_LOC_X_KEY])
@@ -2048,8 +2050,10 @@ def main():
             print(f"Updated Z to {z_override:.2f} in {last_snake_csv}")
         elif event == START_PREVIEW:
             print("Starting Preview With Settings")
-            if camera.preview:
+            try:
                 camera.stop_preview()
+            except Exception:
+                pass
             try:
                 prev_width = int(values[PREVIEW_WIDTH_KEY])
                 prev_height = int(values[PREVIEW_HEIGHT_KEY])
@@ -2070,7 +2074,10 @@ def main():
                 print(f"x_win:{x_win}, y_win:{y_win}")
         elif event == STOP_PREVIEW:
             print("Stopping Preview")
-            camera.stop_preview()
+            try:
+                camera.stop_preview()
+            except Exception:
+                pass
         elif event == SET_EXPOSURE_MODE:
             set_exposure_mode(event, values, window, camera)
             # setup_picture_camera_settings(camera)
