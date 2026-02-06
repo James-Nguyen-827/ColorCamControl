@@ -6,7 +6,7 @@ Module that sets up 3D Printer with Serial connection and sends GCode
 # camera, serial, time, yaml
 import os
 import pandas as pd
-import picamera
+# from picamera2 import Picamera2  # Uncomment if camera is needed
 import serial
 import time
 import yaml
@@ -19,13 +19,13 @@ import settings as C
 
 # Setup camera and printer
 # Create printer/camera variables
-# camera = picamera.PiCamera()
+# camera = Picamera2()  # Uncomment if camera is needed
+# preview_config = camera.create_preview_configuration(main={"size": (640, 480)})
+# camera.configure(preview_config)
+# camera.start()
 
 # MHT: 270
-# camera.rotation = 270
-
 # Cell Sensor, at home, 90
-#camera.rotation = 90
 
 printer = serial.Serial(C.DEVICE_PATH, baudrate=C.BAUDRATE, timeout=C.TIMEOUT_TIME)
 
@@ -41,7 +41,8 @@ def initial_setup(path_list):
     Z = 2
 
     # Check if 3D printer is connected
-    if printer.isOpen():
+    # Note: .isOpen() is deprecated in pyserial 3.0+, use .is_open instead
+    if printer.is_open:
         print('Connected to printer')
 
     # starting_location_x = path_list[0][X]
@@ -111,9 +112,8 @@ def run_gcode(gcode_string):
     # printer.write(bytes(gcode_string, "utf-8"))
     printer.write(str.encode(gcode_string))
 
-    # camera.start_preview(fullscreen=False, window=(30, 30, 500, 500))
-    # time.sleep(5)
-    # camera.stop_preview()
+    # Note: picamera2 preview handling differs from picamera
+    # Preview window positioning requires DRM/Qt implementation
 
 
 # define function go_home() to go to home coordinates
@@ -305,7 +305,8 @@ def output_serial_data():
     
     # output = printer.readline()
     printer.flush()
-    bytesToRead = printer.inWaiting()
+    # Note: .inWaiting() is deprecated in pyserial 3.0+, use .in_waiting instead
+    bytesToRead = printer.in_waiting
     print("bytesToRead:", bytesToRead)
     output = printer.read(bytesToRead)
     # output = printer.read(512)
@@ -318,7 +319,8 @@ def get_serial_data():
     
     # output = printer.readline()
     printer.flush()
-    bytesToRead = printer.inWaiting()
+    # Note: .inWaiting() is deprecated in pyserial 3.0+, use .in_waiting instead
+    bytesToRead = printer.in_waiting
     print("bytesToRead:", bytesToRead)
     output = printer.read(bytesToRead)
     # output = printer.read(512)
@@ -342,7 +344,8 @@ def get_serial_data2():
     for i in range(num_tries):
     # while bytesToRead == 0:
         # printer.flush()
-        bytesToRead = printer.inWaiting()
+        # Note: .inWaiting() is deprecated in pyserial 3.0+, use .in_waiting instead
+        bytesToRead = printer.in_waiting
         # If no serial data found, start loop again.
         if bytesToRead == 0:
             # if no bytes found, then maybe too many requests.

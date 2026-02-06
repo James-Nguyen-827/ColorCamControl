@@ -1,0 +1,31 @@
+# ColorCamControl - Python Dependencies
+# For Raspberry Pi 4 with picamera2 support
+
+# GUI Framework
+FreeSimpleGUI>=4.0.0
+
+# Computer Vision and Image Processing
+opencv-python>=4.5.0
+numpy>=1.19.0
+Pillow>=8.0.0
+
+# Serial Communication
+pyserial>=3.5
+
+# Configuration Files
+PyYAML>=5.4.0
+
+# String Parsing
+parse>=1.19.0
+
+# X11 Window Management (for preview window positioning)
+python-xlib>=0.33
+
+# Data Processing
+pandas>=1.3.0
+
+# Note: picamera2 is typically installed as a system package on Raspberry Pi OS
+# If using a virtual environment with --system-site-packages, picamera2 will be available
+# If using an isolated venv, install via:
+#   pip install rpi-libcamera rpi-kms picamera2
+# See: https://forums.raspberrypi.com/viewtopic.php?t=361758

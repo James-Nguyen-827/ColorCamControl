@@ -22,7 +22,7 @@ import random
 import time
 
 from datetime import datetime
-from picamera import PiCamera
+from picamera2 import Picamera2
 
 # Preview Resolution
 VID_WIDTH = 640
@@ -55,39 +55,24 @@ def get_unique_id():
 
 def gen_cam_data(image_file_name, camera):
     
-    # Simulated Version
-    # Get Exposure Mode, Digital and Analog Gains
-    # analog_gain = random.random()
-    # digital_gain = random.random()
-
-    # Get AWB, red and blue gains
-    # red_gain = random.random()
-    # blue_gain = random.random()
-
-    # Get Shutterspeed
-    # shutter_speed = random.uniform(10.0, 35.0)
+    # picamera2 version - get metadata from capture
+    # Capture metadata to get current camera settings
+    metadata = camera.capture_metadata()
     
-    # Real Version:
-    # ISO version
-    iso_value = camera.iso
+    # ISO value (sensitivity)
+    iso_value = metadata.get("AnalogueGain", 0) * 100  # Approximate ISO from analogue gain
     
-    # Get Analog and Digital Gains
-    #analog_gain = camera.analog_gain # Gets Fraction DataType
-    #digital_gain = camera.digital_gain # Gets Fraction DataType
-    
-    analog_gain = camera.analog_gain.__float__() # Gets Fraction DataType, convert to float
-    digital_gain = camera.digital_gain.__float__() # Gets Fraction DataType, convert to float
+    # Get Analog and Digital Gains from metadata
+    analog_gain = float(metadata.get("AnalogueGain", 1.0))
+    digital_gain = float(metadata.get("DigitalGain", 1.0))
     
     # Get AWB Gains, red and blue
-    red_gain, blue_gain = camera.awb_gains   # Gets a tuple (red, blue)
+    colour_gains = metadata.get("ColourGains", (1.0, 1.0))
+    red_gain = float(colour_gains[0])
+    blue_gain = float(colour_gains[1])
     
-    # Convert Fraction to float
-    red_gain = red_gain.__float__()
-    blue_gain = blue_gain.__float__()
-    
-    # Get Shutterspeed
-    # If shutter_speed is set to 0 (auto), then exposure_speed will return actual shutterspeed
-    shutter_speed = camera.exposure_speed    # Gets value in microseconds
+    # Get Shutterspeed (exposure time in microseconds)
+    shutter_speed = metadata.get("ExposureTime", 0)  # Already in microseconds
     
     data_row = [image_file_name, iso_value, analog_gain, digital_gain, red_gain, blue_gain, shutter_speed]
 
@@ -126,34 +111,30 @@ def append_to_csv_file(data_row):
 
 
 def setup_camera():
-    camera = PiCamera()
-    # camera.resolution = PIC_RES
-    camera.resolution = (VID_WIDTH, VID_HEIGHT)
-    camera.framerate = 32
+    camera = Picamera2()
+    # Configure preview with video resolution
+    preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(preview_config)
+    camera.start()
     
-    # Set Exposure mode
-    # camera.exposure_mode = 'fireworks'
+    # Set Exposure mode (picamera2 uses different controls)
+    # camera.set_controls({"ExposureMode": "fireworks"})  # Not directly supported
     
     # Set AWB Mode
-    # camera.awb_mode = 'tungsten'
+    # camera.set_controls({"AwbMode": 2})  # 2 = tungsten
     
-    #time.sleep(2)
-    pre_value = camera.digital_gain
+    # Wait for digital gain values to settle
+    pre_value = -1
     cur_value = -1
-    # for i in range(20):
     # Wait for digital gain values to settle, then break out of loop
     while pre_value != cur_value:
         pre_value = cur_value
-        # pre gets cur 
-        # cur get new
-        
-        cur_value = camera.digital_gain
-        #if pre_value != cur_value:
-        #    pre_value = cur_value
+        # Get current metadata
+        metadata = camera.capture_metadata()
+        cur_value = float(metadata.get("DigitalGain", 1.0))
         
         print(f"cur_value: {cur_value}")
         time.sleep(0.5)
-    
     
     return camera
 
@@ -161,48 +142,48 @@ def setup_camera():
 
 def set_exposure_mode(camera):
     
-    # Extract Values
-    # camera.resolution = PIC_RES
+    # picamera2 version - set exposure controls differently
     
     # Turn Exposure mode back on so camera can adjust to new light
-    # camera.exposure_mode = "auto"
-    # camera.awb_mode = 'auto'
+    # camera.set_controls({"ExposureMode": 0})  # 0 = normal
+    # camera.set_controls({"AwbMode": 0})  # 0 = auto
     
+    # Set exposure mode (fireworks equivalent - long exposure)
+    # Note: picamera2 doesn't have exact 'fireworks' mode, use manual exposure
+    # camera.set_controls({"ExposureMode": 1})  # Manual mode
     
-    camera.exposure_mode = 'fireworks'
-    camera.awb_mode = 'tungsten'
+    # Set AWB Mode (tungsten)
+    camera.set_controls({"AwbMode": 2})  # 2 = tungsten
     
-    # Set ISO to desired value
-    camera.iso = 0
+    # Set ISO (AnalogueGain) - picamera2 uses AnalogueGain directly
+    # camera.set_controls({"AnalogueGain": 1.0})  # Set to 1.0 for auto
     
     # Wait for Automatic Gain Control to settle
     # time.sleep(2)
-    pre_value = camera.digital_gain
+    pre_value = -1
     cur_value = -1
-    # for i in range(20):
     # Wait for digital gain values to settle, then break out of loop
     while pre_value != cur_value:
         pre_value = cur_value
-        # pre gets cur 
-        # cur get new
-        
-        cur_value = camera.digital_gain
-        #if pre_value != cur_value:
-        #    pre_value = cur_value
+        # Get current metadata
+        metadata = camera.capture_metadata()
+        cur_value = float(metadata.get("DigitalGain", 1.0))
         
         print(f"digital_gain: {cur_value}")
         time.sleep(0.5)
     
     # Now fix the values
     
-    # Exposure Mode
-    # camera.framerate = 30
-    camera.shutter_speed = 30901
-    # camera.shutter_speed = camera.exposure_speed
-    camera.exposure_mode = 'off'
-    g = camera.awb_gains
-    camera.awb_mode = 'off'
-    camera.awb_gains = g
+    # Exposure Mode - set manual exposure
+    # Set shutter speed (exposure time in microseconds)
+    camera.set_controls({"ExposureTime": 30901})  # 30901 microseconds
+    camera.set_controls({"ExposureMode": 1})  # Manual exposure mode
+    
+    # Get and lock AWB gains
+    metadata = camera.capture_metadata()
+    colour_gains = metadata.get("ColourGains", (1.0, 1.0))
+    camera.set_controls({"ColourGains": colour_gains})
+    camera.set_controls({"AwbMode": 0})  # 0 = auto, but gains are locked
     # Must let camera sleep so exposure mode can settle on certain values, else black screen happens
     # time.sleep(settle_time)
     
@@ -213,9 +194,9 @@ def get_picture(camera):
     image_file_name = f"image_{get_unique_id()}.jpg"
     image_full_path = os.path.join(SAVE_IMAGE_FOLDER, image_file_name)
     
-    # datarow = gen_cam_data(image_file_name, camera)
-    
-    camera.resolution = PIC_RES
+    # Configure for still capture with high resolution
+    still_config = camera.create_still_configuration(main={"size": PIC_RES})
+    camera.configure(still_config)
     
     # time.sleep(2)
     
@@ -223,10 +204,14 @@ def get_picture(camera):
     # seconds_to_wait = 2
     # sleep2(seconds_to_wait)
     
-    camera.capture(image_full_path)
+    camera.capture_file(image_full_path)
     #time.sleep(2)
     
     datarow = gen_cam_data(image_file_name, camera)
+    
+    # Restore preview configuration
+    preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(preview_config)
     
     print(f"Picture Saved: {image_full_path}")
     return datarow
@@ -268,6 +253,7 @@ def main():
         data_row = get_picture(camera)
         append_to_csv_file(data_row)
     
+    camera.stop()
     camera.close()
 
     pass

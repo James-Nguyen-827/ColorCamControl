@@ -6,7 +6,7 @@ Module that sets up 3D Printer with Serial connection and sends GCode
 # camera, serial, time, yaml
 import os
 import pandas as pd
-import picamera
+from picamera2 import Picamera2
 import serial
 import time
 import yaml
@@ -19,13 +19,13 @@ import settings as C
 
 # Setup camera and printer
 # Create printer/camera variables
-camera = picamera.PiCamera()
+camera = Picamera2()
+preview_config = camera.create_preview_configuration(main={"size": (640, 480)})
+camera.configure(preview_config)
+camera.start()
 
 # MHT: 270
-# camera.rotation = 270
-
 # Cell Sensor, at home, 90
-#camera.rotation = 90
 
 printer = serial.Serial(C.DEVICE_PATH, baudrate=C.BAUDRATE, timeout=C.TIMEOUT_TIME)
 
@@ -41,7 +41,8 @@ def initial_setup(path_list):
     Z = 2
 
     # Check if 3D printer is connected
-    if printer.isOpen():
+    # Note: .isOpen() is deprecated in pyserial 3.0+, use .is_open instead
+    if printer.is_open:
         print('Connected to printer')
 
     # starting_location_x = path_list[0][X]
@@ -95,9 +96,8 @@ def run_gcode(gcode_string):
     printer.write(bytes(gcode_string, "utf-8"))
     printer.write(str.encode(gcode_string))
 
-    # camera.start_preview(fullscreen=False, window=(30, 30, 500, 500))
-    # time.sleep(5)
-    # camera.stop_preview()
+    # Note: picamera2 preview handling differs from picamera
+    # Preview window positioning requires DRM/Qt implementation
 
 
 # define function go_home() to go to home coordinates
@@ -188,27 +188,28 @@ def start_experiment(gcode_string_list):
             time.sleep(4)
             if C.isPreviewModeOn == True:
                 print("Preview Mode is On, only showing preview camera")
-                camera.start_preview(fullscreen=False, window=(30, 30, 500, 500))
+                # Note: picamera2 preview handling differs - camera is already started
+                # Preview window positioning requires DRM/Qt implementation
                 time.sleep(5)
-
-                # camera.stop_preview()
             elif C.isVideoCaptureModeOn == True:
                 print("Recording Video Footage")
                 file_full_path = get_file_full_path(folder_path, well_number)
                 # TODO: Change to Video Captures
-                # camera.capture(file_full_path)
+                # camera.start_recording(file_full_path)
+                # camera.stop_recording()
             elif C.isPictureCaptureModeOn == True:
                 print("Taking Pictures Only")
                 file_full_path = get_file_full_path(folder_path, well_number)
                 print(file_full_path)
-                camera.capture(file_full_path)
+                camera.capture_file(file_full_path)
                 # TODO: Look up Camera settings to remove white balance (to deal with increasing brightness)
 
-                camera.capture(file_full_path)
+                camera.capture_file(file_full_path)
             well_number += 1
 
-    if C.isPreviewModeOn == True:
-        camera.stop_preview()
+    # Cleanup camera
+    camera.stop()
+    camera.close()
 
 
 # Define function that creates folder for experiment if VideoCapture or PictureCapture is on

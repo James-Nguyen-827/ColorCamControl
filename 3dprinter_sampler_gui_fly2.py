@@ -46,11 +46,10 @@ Changelog
 """
 
 # Import FreeSimpleGUI, cv2, numpy, time libraries
-# Import picamera libraries
+# Import picamera2 libraries (Raspberry Pi 4)
 
 from datetime import datetime
-from picamera.array import PiRGBArray, PiBayerArray
-from picamera import PiCamera
+from picamera2 import Picamera2
 from Xlib.display import Display
 import csv
 import FreeSimpleGUI as sg
@@ -329,9 +328,10 @@ def run_experiment(event, values, thread_event, camera, preview_win_id):
     # global camera
     print("run_experiment")
     
-    if camera.preview:
-        camera.stop_preview()
-        
+    # Note: picamera2 preview handling differs - camera is already started
+    # Preview window positioning requires DRM/Qt implementation
+    # camera.stop()  # Uncomment if you need to stop camera completely
+    
     
     
     # Get CSV Filename
@@ -431,8 +431,9 @@ def run_experiment2(event, values, thread_event, pause_event, camera, preview_wi
     global is_running_experiment
     print("run_experiment with timer")
     
-    if camera.preview:
-        camera.stop_preview()
+    # Note: picamera2 preview handling differs - camera is already started
+    # Preview window positioning requires DRM/Qt implementation
+    # camera.stop()  # Uncomment if you need to stop camera completely
     
     # Get Timer Values
     total_seconds, run_seconds = ET.get_hour_min(event, values)
@@ -619,7 +620,8 @@ def run_experiment_gui(main_values, camera):
     # Get paths from CSV file
     print("run_experiment")
     
-    camera.stop_preview()
+    # Note: picamera2 preview handling differs - camera stays running
+    # camera.stop()  # Uncomment if you need to stop camera completely
     
     
     # Get CSV Filename
@@ -656,7 +658,9 @@ def run_experiment_gui(main_values, camera):
     pic_width = PIC_WIDTH
     pic_height = PIC_HEIGHT
 
-    camera.resolution = (pic_width, pic_height)
+    # Configure camera for picture resolution (picamera2)
+    still_config = camera.create_still_configuration(main={"size": (pic_width, pic_height)})
+    camera.configure(still_config)
     
     # Sleep time for exposure mode
     # time.sleep(expo_wait_time)
@@ -813,15 +817,14 @@ def get_video(camera):
 def capture_still(camera, file_full_path):
     """Safely capture a still by pausing preview and restoring resolution."""
     with CAMERA_LOCK:
-        was_previewing = bool(camera.preview)
-        if was_previewing:
-            camera.stop_preview()
-        original_res = camera.resolution
-        camera.resolution = (PIC_WIDTH, PIC_HEIGHT)
-        camera.capture(file_full_path)
-        camera.resolution = original_res
-        if was_previewing:
-            camera.start_preview()
+        # Note: picamera2 handles resolution via configuration
+        # Configure for still capture with high resolution
+        still_config = camera.create_still_configuration(main={"size": (PIC_WIDTH, PIC_HEIGHT)})
+        camera.configure(still_config)
+        camera.capture_file(file_full_path)
+        # Restore preview configuration
+        preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+        camera.configure(preview_config)
 
 
 def get_picture(camera):
@@ -951,14 +954,15 @@ def create_z_stack(z_start, z_end, z_increment, save_folder_location, camera):
         save_file_name = f"_image_{z_rounded_str}_.jpg"
         save_full_path = f"{save_folder_path}/{save_file_name}"
         
-        # Change to max resolution
-        camera.resolution = PIC_RES
+        # Change to max resolution (picamera2)
+        still_config = camera.create_still_configuration(main={"size": PIC_RES})
+        camera.configure(still_config)
         
-        
-        camera.capture(save_full_path)
+        camera.capture_file(save_full_path)
         
         # Change back to streaming resolution
-        camera.resolution = VID_RES
+        preview_config = camera.create_preview_configuration(main={"size": VID_RES})
+        camera.configure(preview_config)
 
     
     print(f"Done Creating Z Stack at {save_folder_path}")
@@ -1317,7 +1321,9 @@ def setup_picture_camera_settings(camera):
     # Sensor resolution (Pi Camera 2, 3280x2464)
     # width = 640
     # height = 480
-    camera.resolution = VID_RES
+    # Configure camera for video resolution (picamera2)
+    preview_config = camera.create_preview_configuration(main={"size": VID_RES})
+    camera.configure(preview_config)
     
     # ISO: Image Brightness
     # 100-200 (daytime), 400-800 (low light)
@@ -1331,11 +1337,11 @@ def setup_picture_camera_settings(camera):
     contrast_number = 50
     camera.contrast = contrast_number
     
-    # Automatic White Balance
-    camera.awb_mode = "off"
+    # Automatic White Balance (picamera2)
     red_gain = 1.5
     blue_gain = 1.8
-    camera.awb_gains = (red_gain, blue_gain)
+    camera.set_controls({"AwbMode": 0})  # 0 = off
+    camera.set_controls({"ColourGains": (red_gain, blue_gain)})
     
     
     
@@ -1366,7 +1372,9 @@ def setup_default_camera_settings(camera):
     # Sensor resolution (Pi Camera 2, 3280x2464)
     width = 640
     height = 480
-    camera.resolution = (width, height)
+    # Configure camera for resolution (picamera2)
+    preview_config = camera.create_preview_configuration(main={"size": (width, height)})
+    camera.configure(preview_config)
     
     # ISO: Image Brightness
     # 100-200 (daytime), 400-800 (low light)
@@ -1380,11 +1388,11 @@ def setup_default_camera_settings(camera):
     contrast_number = 50
     camera.contrast = contrast_number
     
-    # Automatic White Balance
-    camera.awb_mode = "off"
+    # Automatic White Balance (picamera2)
     red_gain = 1.5
     blue_gain = 1.8
-    camera.awb_gains = (red_gain, blue_gain)
+    camera.set_controls({"AwbMode": 0})  # 0 = off
+    camera.set_controls({"ColourGains": (red_gain, blue_gain)})
     
     
     
@@ -1424,12 +1432,16 @@ def set_exposure_mode(event, values, window, camera):
     
     # Exposure Mode
     # camera.framerate = 30
-    # camera.shutter_speed = 30901
-    camera.shutter_speed = camera.exposure_speed
-    camera.exposure_mode = 'off'
-    g = camera.awb_gains
-    camera.awb_mode = 'off'
-    camera.awb_gains = g
+    # picamera2 exposure controls
+    # Get current exposure time from metadata
+    metadata = camera.capture_metadata()
+    exposure_time = metadata.get("ExposureTime", 30901)
+    camera.set_controls({"ExposureTime": exposure_time})
+    camera.set_controls({"ExposureMode": 1})  # 1 = manual
+    # Get current AWB gains from metadata
+    colour_gains = metadata.get("ColourGains", (1.5, 1.8))
+    camera.set_controls({"ColourGains": colour_gains})
+    camera.set_controls({"AwbMode": 0})  # 0 = off
     # Must let camera sleep so exposure mode can settle on certain values, else black screen happens
     # time.sleep(settle_time)
     
@@ -1437,11 +1449,11 @@ def set_exposure_mode(event, values, window, camera):
     pass
 
 def set_white_balance(camera, red_gain=1.5, blue_gain=1.8, isAutoWhiteBalanceOn=False):
-    # Automatic White Balance
-    camera.awb_mode = "off"
+    # Automatic White Balance (picamera2)
     red_gain = 1.5
     blue_gain = 1.8
-    camera.awb_gains = (red_gain, blue_gain)
+    camera.set_controls({"AwbMode": 0})  # 0 = off
+    camera.set_controls({"ColourGains": (red_gain, blue_gain)})
     pass
 # === End Camera Settings Functions ===
 
@@ -1479,49 +1491,41 @@ def main():
     global PIC_WIDTH, PIC_HEIGHT, PIC_SAVE_FOLDER, is_running_experiment, easy_rot
 
     # Setup Camera
-    # initialize the camera and grab a reference to the raw camera capture
-    camera = PiCamera()
-    camera.resolution = (VID_WIDTH, VID_HEIGHT)
-    camera.framerate = 32
+    # initialize picamera2 (Raspberry Pi 4)
+    camera = Picamera2()
+    preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(preview_config)
+    camera.start()
+    
     # MHT: 270
-    # camera.rotation = 270
-
     # Cell Sensor, at home, 90
-    # camera.rotation = 90
     
     # MHT: 270, Cell Sensor: 90
-    # camera.rotation = C.CAMERA_ROTATION_ANGLE
-    # Lab stuff
-    camera.rotation = easy_rot
+    # Lab stuff - Apply rotation transform (picamera2 uses Transform control: 0=0°, 1=90°, 2=180°, 3=270°)
+    transform_map = {0: 0, 90: 1, 180: 2, 270: 3}
+    transform_value = transform_map.get(easy_rot % 360, 0)
+    camera.set_controls({"Transform": transform_value})
     
     # Set Camera Settings:
-    # Set Exposure mode
-    # camera.exposure_mode = 'fireworks'
+    # Set Exposure mode (picamera2 uses different controls)
+    # camera.set_controls({"ExposureMode": 1})  # Manual mode
     
     # Set AWB Mode
-    # camera.awb_mode = 'tungsten'
+    # camera.set_controls({"AwbMode": 2})  # 2 = tungsten
     
     # Let Camera Settings Settle:
-    pre_value = camera.digital_gain
+    # Wait for digital gain values to settle
+    pre_value = -1
     cur_value = -1
-    # for i in range(20):
-    # Wait for digital gain values to settle, then break out of loop
     while pre_value != cur_value:
         pre_value = cur_value
-        # pre gets cur 
-        # cur get new
-        
-        cur_value = camera.digital_gain
-        #if pre_value != cur_value:
-        #    pre_value = cur_value
+        # Get current metadata
+        metadata = camera.capture_metadata()
+        cur_value = float(metadata.get("DigitalGain", 1.0))
         
         print(f"digital_gain: {cur_value}")
         time.sleep(0.5)
     
-    
-    # rawCapture = PiRGBArray(camera, size=(VID_WIDTH, VID_HEIGHT))
-    
-    #
     # allow the camera to warmup
     time.sleep(0.1)
     
@@ -1740,7 +1744,9 @@ def main():
             move_window_pid(preview_win_id, x_new, y_new)
             
             # Start Camera Too PREVIEW_LOC_X, PREVIEW_LOC_Y, PREVIEW_WIDTH, PREVIEW_HEIGHT, PREVIEW_ALPHA
-            camera.start_preview(alpha=PREVIEW_ALPHA, fullscreen=False, window=(PREVIEW_LOC_X, y_new + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT))
+            # Note: picamera2 preview window positioning requires DRM/Qt implementation
+            # Window coordinates are not directly supported like in picamera1
+            # Camera is already started, preview handling differs in picamera2
             
             # Change is_initial_startup to False
             is_initial_startup = False
@@ -1753,8 +1759,9 @@ def main():
                     PREVIOUS_CAMERA_PREVIEW_X = x_win_preview
                     PREVIOUS_CAMERA_PREVIEW_Y = y_win_preview
                 
-                    if camera.preview:
-                        camera.start_preview(alpha=PREVIEW_ALPHA, fullscreen=False, window=(x_win_preview, y_win_preview + PREVIEW_WINDOW_OFFSET, PREVIEW_WIDTH, PREVIEW_HEIGHT))
+                    # Note: picamera2 preview window positioning requires DRM/Qt implementation
+                    # Camera is already started, preview handling differs in picamera2
+                    # Window coordinates are not directly supported like in picamera1
                         # If crosshair overlay is on, move it with the preview window
                         if values.get("--XHAIR_ON--", True):
                             try:
@@ -2134,7 +2141,9 @@ def main():
         # rawCapture.truncate(0)
 
     # Out of While Loop
-    camera.stop_preview()
+    # Cleanup camera
+    camera.stop()
+    camera.close()
     
     # Closing Window
     window.close()

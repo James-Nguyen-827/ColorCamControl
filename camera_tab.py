@@ -15,10 +15,10 @@ Bonus:
 """
 import cv2
 import FreeSimpleGUI as sg
+import numpy as np
 
 from datetime import datetime
-from picamera import PiCamera
-from picamera.array import PiRGBArray, PiBayerArray
+from picamera2 import Picamera2
 
 
 # CONSTANTS
@@ -66,12 +66,11 @@ def main():
     
     global PIC_WIDTH, PIC_HEIGHT, PIC_SAVE_FOLDER
     
-    camera = PiCamera()
-    camera.resolution = (VID_WIDTH, VID_HEIGHT)
-    camera.framerate = 32
-    
-    rawCapture = PiRGBArray(camera, size=(VID_WIDTH, VID_HEIGHT))
-    
+    # Initialize picamera2
+    camera = Picamera2()
+    preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(preview_config)
+    camera.start()
     
     # unique_id = get_unique_id()
     # print(f"unique_id: {unique_id}")
@@ -103,13 +102,14 @@ def main():
     # Choose Folder To Save To
     # Take a Picture button
     
-    # Run Camera Loop
-    #  Check if Camera Rotation has
-    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
-    # while True:
+    # Run Camera Loop - picamera2 uses capture_array() instead of capture_continuous
+    while True:
         event, values = window.read(timeout=1)
         
-        frame = frame.array
+        # Capture frame from picamera2
+        frame = camera.capture_array()
+        # Convert from RGB to BGR for OpenCV compatibility
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
         # Only allow digits for camera rotation
         
@@ -134,7 +134,10 @@ def main():
             camera_rotation_angle = int(camera_rotation_value)
             
             #print(f"Cam Rotation: {camera_rotation_angle}")
-            camera.rotation = camera_rotation_angle
+            # Apply rotation transform (picamera2 uses Transform control: 0=0°, 1=90°, 2=180°, 3=270°)
+            transform_map = {0: 0, 90: 1, 180: 2, 270: 3}
+            transform_value = transform_map.get(camera_rotation_angle % 360, 0)
+            camera.set_controls({"Transform": transform_value})
             
             # Update Still Image Capture Resolution:
             # global PIC_WIDTH, PIC_HEIGHT
@@ -155,10 +158,10 @@ def main():
         
         # Update GUI Window with new image
         window['-IMAGE-'].update(data=imgbytes)
-        
-        # clear the stream in preparation for the next frame
-        # Must do this, else it won't work
-        rawCapture.truncate(0)
+    
+    # Cleanup
+    camera.stop()
+    camera.close()
     pass
 
 

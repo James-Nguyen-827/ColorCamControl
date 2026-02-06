@@ -42,11 +42,11 @@ Changelog
 """
 
 # Import FreeSimpleGUI, cv2, numpy, time libraries
-# Import picamera libraries
+# Import picamera2 libraries (Raspberry Pi 4)
 
 from datetime import datetime
-from picamera.array import PiRGBArray, PiBayerArray
-from picamera import PiCamera
+from picamera2 import Picamera2
+import cv2
 import csv
 import FreeSimpleGUI as sg
 import cv2
@@ -307,11 +307,13 @@ def run_experiment(event, values, thread_event, camera):
             
                 #camera.resolution = (pic_width, pic_height)
                 
-                camera.capture(file_full_path)
-                
-                # Return to streaming resolution: 640 x 480 (or it will crash)
-                # Bug: Crashes anyway because of threading
-                #camera.resolution = (VID_WIDTH, VID_HEIGHT)
+                # Configure for still capture (picamera2)
+                still_config = camera.create_still_configuration(main={"size": (pic_width, pic_height)})
+                camera.configure(still_config)
+                camera.capture_file(file_full_path)
+                # Restore preview configuration
+                preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+                camera.configure(preview_config)
                 # TODO: Look up Camera settings to remove white balance (to deal with increasing brightness)
             # May implement the following to break out of loop first. Helpful for lots of wells
             """    
@@ -393,11 +395,12 @@ def run_experiment_gui(main_values, camera):
     # Change camera resolution
     # Sensor resolution (Pi Camera 2, 3280x2464)
     # Change resolution to largest resolution for taking pictures
-    # Change Image Capture Resolution
+    # Change Image Capture Resolution (picamera2)
     pic_width = PIC_WIDTH
     pic_height = PIC_HEIGHT
 
-    camera.resolution = (pic_width, pic_height)
+    still_config = camera.create_still_configuration(main={"size": (pic_width, pic_height)})
+    camera.configure(still_config)
     
     # Sleep time for exposure mode
     # time.sleep(expo_wait_time)
@@ -455,7 +458,7 @@ def run_experiment_gui(main_values, camera):
             # print(file_full_path)
             
             
-            camera.capture(file_full_path)
+            camera.capture_file(file_full_path)
             # TODO: Look up Camera settings to remove white balance (to deal with increasing brightness)
             time.sleep(2)
             
@@ -477,7 +480,9 @@ def run_experiment_gui(main_values, camera):
     window_exp.close()
     
     # Change resolution back to video stream
-    camera.resolution = (VID_WIDTH, VID_HEIGHT)
+    # Restore preview configuration (picamera2)
+    preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(preview_config)
     # time.sleep(expo_wait_time)
     
     # setup_default_camera_settings(camera)
@@ -542,9 +547,15 @@ def get_video(camera):
     # Set Recording Time (in seconds)
     recording_time = int(1 * 60)
     
+    # picamera2 video recording
+    video_config = camera.create_video_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(video_config)
     camera.start_recording(filename)
     camera.wait_recording(recording_time)
     camera.stop_recording()
+    # Restore preview configuration
+    preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(preview_config)
     
     print(f"Recorded Video: {filename}")
 
@@ -625,14 +636,15 @@ def create_z_stack(z_start, z_end, z_increment, save_folder_location, camera):
         save_file_name = f"_image_{z_rounded_str}_.jpg"
         save_full_path = f"{save_folder_path}/{save_file_name}"
         
-        # Change to max resolution
-        camera.resolution = PIC_RES
+        # Change to max resolution (picamera2)
+        still_config = camera.create_still_configuration(main={"size": PIC_RES})
+        camera.configure(still_config)
         
-        
-        camera.capture(save_full_path)
+        camera.capture_file(save_full_path)
         
         # Change back to streaming resolution
-        camera.resolution = VID_RES
+        preview_config = camera.create_preview_configuration(main={"size": VID_RES})
+        camera.configure(preview_config)
 
     
     print(f"Done Creating Z Stack at {save_folder_path}")
@@ -751,24 +763,21 @@ def main():
     global PIC_WIDTH, PIC_HEIGHT, PIC_SAVE_FOLDER, is_running_experiment
 
     # Setup Camera
-    # initialize the camera and grab a reference to the raw camera capture
-    camera = PiCamera()
-    camera.resolution = (VID_WIDTH, VID_HEIGHT)
-    camera.framerate = 32
+    # initialize picamera2 (Raspberry Pi 4)
+    camera = Picamera2()
+    preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+    camera.configure(preview_config)
+    camera.start()
+    
     # MHT: 270
-    # camera.rotation = 270
-
     # Cell Sensor, at home, 90
-    # camera.rotation = 90
     
     # MHT: 270, Cell Sensor: 90
-    # camera.rotation = C.CAMERA_ROTATION_ANGLE
-    # Lab stuff
-    camera.rotation = 270
+    # Lab stuff - Apply rotation transform (picamera2 uses Transform control: 0=0°, 1=90°, 2=180°, 3=270°)
+    transform_map = {0: 0, 90: 1, 180: 2, 270: 3}
+    transform_value = transform_map.get(270 % 360, 0)
+    camera.set_controls({"Transform": transform_value})
     
-    rawCapture = PiRGBArray(camera, size=(VID_WIDTH, VID_HEIGHT))
-    
-    #
     # allow the camera to warmup
     time.sleep(0.1)
     
@@ -991,17 +1000,19 @@ def main():
             unique_id = get_unique_id()
             pic_save_name = f"test_{unique_id}_{pic_width}x{pic_height}.jpg"
             
-            camera.resolution = (pic_width, pic_height)
-            # camera.resolution = (2592, 1944)
+            # Configure for still capture with high resolution (picamera2)
+            still_config = camera.create_still_configuration(main={"size": (pic_width, pic_height)})
+            camera.configure(still_config)
             
             pic_save_full_path = f"{PIC_SAVE_FOLDER}/{pic_save_name}"
             
-            camera.capture(pic_save_full_path)
+            camera.capture_file(pic_save_full_path)
             
             print(f"Saved Image: {pic_save_full_path}")
             
-            # Return to streaming resolution: 640 x 480 (or it will crash)
-            camera.resolution = (VID_WIDTH, VID_HEIGHT)
+            # Return to streaming resolution
+            preview_config = camera.create_preview_configuration(main={"size": (VID_WIDTH, VID_HEIGHT)})
+            camera.configure(preview_config)
             
             """
             # Display image with OpenCV (Keeps Crashing)
@@ -1105,11 +1116,13 @@ def main():
         # Update GUI Window with new image
         window['-IMAGE-'].update(data=imgbytes)
         
-        # clear the stream in preparation for the next frame
-        # Must do this, else it won't work
-        rawCapture.truncate(0)
+        # Note: picamera2 doesn't need truncate() - capture_array() handles frames directly
 
     # Out of While Loop
+    
+    # Cleanup camera
+    camera.stop()
+    camera.close()
     
     # Closing Window
     window.close()
