@@ -111,6 +111,7 @@ def run_gcode(gcode_string):
     # Convert to Binary with UTF-8 encoding for string, write to serial
     # printer.write(bytes(gcode_string, "utf-8"))
     printer.write(str.encode(gcode_string))
+    printer.flush()  # Ensure command is sent immediately; avoids printer "not responding"
 
     # Note: picamera2 preview handling differs from picamera
     # Preview window positioning requires DRM/Qt implementation

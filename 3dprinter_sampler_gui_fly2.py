@@ -284,16 +284,21 @@ def run_relative(direction, values):
     # print("move_amount (after):", move_amount)
 
     #  Use string formatting to create GCode string (example: G0X-1.00)
-    relative_coordinates = "G0{}{}".format(direction, move_amount)
+    #  Some firmwares reject "X+1.00"; use "X1.00" for positive and "X-1.00" for negative
+    axis = direction[0]  # X, Y, or Z
+    sign = "-" if direction.endswith("-") else ""
+    relative_coordinates = "G0{}{}{}".format(axis, sign, move_amount)
 
     print("relative_coordinates:", relative_coordinates)
 
     # This is where you would run the GCode
     # Run Relative Mode
     printer.run_gcode("G91")
-            
+    time.sleep(0.15)  # Let printer process G91 before sending move (avoids buffer overflow)
+
     # Run relative_coordinates GCODE created in this function
     printer.run_gcode(relative_coordinates)
+    time.sleep(0.1)   # Let printer accept move command before next action
 #   TODO: Extruder Speed Adjustment
 
 
