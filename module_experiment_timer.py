@@ -13,15 +13,13 @@ Changelog:
 import FreeSimpleGUI as sg
 import time
 
-DEFAULT_TOTAL_HOURS = "0"
-DEFAULT_TOTAL_MIN = "3"
+DEFAULT_NUM_ROUNDS = "3"
 DEFAULT_RUN_MIN = "1"
 
-TOTAL_HOURS_KEY = "-HOURS-"
-TOTAL_MIN_KEY = "-MIN-"
+NUM_ROUNDS_KEY = "-NUM_ROUNDS-"
 RUN_MIN_KEY = "-RUN_MIN-"
 
-TIME_KEY_LIST = [TOTAL_HOURS_KEY, TOTAL_MIN_KEY, RUN_MIN_KEY]
+TIME_KEY_LIST = [NUM_ROUNDS_KEY, RUN_MIN_KEY]
 
 
 # Define function to check an InputText key for digits only
@@ -38,9 +36,8 @@ def get_time_layout():
     time_size = (3, 1)
     
     time_layout = [
-                    [sg.Text("How long will I collect pictures?")],
-                    [sg.Text("Hour(s):"), sg.InputText(DEFAULT_TOTAL_HOURS, size=time_size, enable_events=True, key=TOTAL_HOURS_KEY)],
-                    [sg.Text("Min(s) : "), sg.InputText(DEFAULT_TOTAL_MIN, size=time_size, enable_events=True, key=TOTAL_MIN_KEY)],
+                    [sg.Text("How many rounds/experiments?")],
+                    [sg.Text("Rounds:"), sg.InputText(DEFAULT_NUM_ROUNDS, size=time_size, enable_events=True, key=NUM_ROUNDS_KEY)],
                     [sg.Text("How long will I wait between each run?")],
                     [sg.Text("Min(s) : "), sg.InputText(DEFAULT_RUN_MIN, size=time_size, enable_events=True, key=RUN_MIN_KEY)]
                   ]
@@ -48,27 +45,18 @@ def get_time_layout():
 
 
 def get_hour_min(event, values):
-    # Assumes values found in the InputText are integers.
-    # Demonstrates that the time values are collected.
+    # Returns (num_rounds, run_seconds) for use by main GUI.
+    # num_rounds: how many rounds/experiments to run.
+    # run_seconds: how long to wait between each run.
 
-    total_hours = int(values[TOTAL_HOURS_KEY])
-    total_minutes = int(values[TOTAL_MIN_KEY])
-    print(f"Experiment will run for {total_hours} hours and {total_minutes} minutes")
-    
-    # Convert to seconds for time.sleep()
-    total_seconds = total_hours*60*60 + total_minutes*60
-    print(f"or experiment will run for {total_seconds} seconds")
+    num_rounds = int(values[NUM_ROUNDS_KEY])
+    print(f"Experiment will run for {num_rounds} round(s)")
 
     run_minutes = int(values[RUN_MIN_KEY])
     run_seconds = run_minutes * 60
     print(f"After collecting data from wells, will wait {run_minutes} minutes (or {run_seconds} seconds) before collecting data again")
 
-    # Dummy values for fasting code testing
-    # total_seconds = 61
-    # run_seconds = 10
-    # demo_start_experiment_1(total_seconds, run_seconds)
-    # demo_start_experiment_2(total_seconds, run_seconds)
-    return total_seconds, run_seconds
+    return num_rounds, run_seconds
 
 
 def demo_start_experiment_1(total_seconds, run_seconds):

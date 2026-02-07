@@ -440,12 +440,8 @@ def run_experiment2(event, values, thread_event, pause_event, camera, preview_wi
     # Preview window positioning requires DRM/Qt implementation
     # camera.stop()  # Uncomment if you need to stop camera completely
     
-    # Get Timer Values
-    total_seconds, run_seconds = ET.get_hour_min(event, values)
-    
-    # Dummy Data for faster code testing, delete when ready
-    # total_seconds = 40
-    # run_seconds = 10
+    # Get Timer Values (num_rounds, run_seconds between each run)
+    num_rounds, run_seconds = ET.get_hour_min(event, values)
         
     start_time = time.monotonic()
     
@@ -557,8 +553,8 @@ def run_experiment2(event, values, thread_event, pause_event, camera, preview_wi
 
             print(f"Will wait {run_seconds} sec before doing next run.")
 
-            # Display time left until end of experiment
-            print(f"Time left until end of experiment: {(total_seconds - elapsed_seconds):.1f} sec")
+            # Display rounds left
+            print(f"Rounds left: {num_rounds - count_run}")
             # May implement the following to break out of loop first. Helpful for lots of wells
             """    
             if is_running_experiment == False:
@@ -574,12 +570,9 @@ def run_experiment2(event, values, thread_event, pause_event, camera, preview_wi
         
         run_elapsed = current_time - run_start
         run_time_left = run_seconds - run_elapsed
-        
-        # if elapsed_seconds + run_seconds < total_seconds:
-            # print(f"Will wait {run_seconds} seconds until collecting data again")
-            # time.sleep(run_seconds)
-        if elapsed_seconds + run_seconds > total_seconds:
-            print(f"Doing another run will go over set time limit, stopping experiment.")
+
+        if count_run >= num_rounds:
+            print(f"Completed {num_rounds} round(s), stopping experiment.")
             is_running_experiment = False
             break
         
