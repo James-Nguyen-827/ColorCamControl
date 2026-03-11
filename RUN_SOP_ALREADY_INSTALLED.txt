@@ -1,0 +1,162 @@
+ColorCamControl - Run SOP (Already Installed)
+================================================
+
+1. Open terminal, go to project, enter venv
+------------------------------------------------
+
+On the Raspberry Pi:
+
+1) Open a terminal.
+
+2) Change into the project folder (adjust path if different):
+   cd ~/Projects/ColorCamControl
+
+3) Activate the virtual environment:
+   source venv/bin/activate
+
+You should now see "(venv)" at the start of your prompt.
+
+
+2. Run the main GUI
+--------------------
+
+1) Start the GUI:
+   python3 3dprinter_sampler_gui_fly2.py
+
+2) Wait for:
+   - The main GUI window ("3D Printer GUI Test")
+   - The small "Camera Preview Pseudo Window" (you can drag this around)
+
+
+3. Turn on and position the camera preview
+------------------------------------------
+
+1) In the main window, go to tab:  Tab 3 (CAM).
+
+2) In the "Preview Location" and "Preview Video Size" fields, either accept defaults or set:
+   - x and y (screen position of the preview window, in pixels)
+   - width and height (preview size, in pixels)
+
+3) Click "Start Preview".
+   - The real camera preview window will appear.
+   - If needed, drag the pseudo window to reposition, then adjust x/y and press "Start Preview" again.
+
+4) To stop the preview at any time, click "Stop Preview" on Tab 3 (CAM).
+
+
+4. Calibrate and create the location CSV (well positions)
+---------------------------------------------------------
+
+Use Tab 2 (Mvmt) to define the plate layout and generate a snake-path CSV.
+
+1) Set rows/columns:
+   - Under the "Corners (csv coords)" frame, fill in:
+     - "--NUM_ROWS--" for number of Rows of the plate.
+     - "--NUM_COLS--" for number of Columns of the plate.
+
+2) Position the printer at each corner using:
+   - Movement buttons (X+/X-/Y+/Y-/Z+/Z-)
+   - "Get Current Location" as needed.
+
+3) Record the four corners:
+   - Move to the top-left well center, then click "Set TL".
+   - Move to the top-right well center, then click "Set TR".
+   - Move to the bottom-left well center, then click "Set BL".
+   - Move to the bottom-right well center, then click "Set BR".
+   - The coordinate strings will populate the TL/TR/BL/BR text boxes.
+
+4) Optional: set a common Z height:
+   - Enter the desired Z value in "Z Override" (for example: 2.50).
+   - You can apply it later to all wells (see step 6 below).
+
+5) Generate the snake-path CSV:
+   - Click "Generate Snake CSV".
+   - This writes "snake_path.csv" into the default folder:
+       testing/Well_Location/snake_path.csv
+     (inside the ColorCamControl project), unless you have customized it in the code.
+
+6) Optional: overwrite Z for all wells:
+   - If you set Z Override, click "Apply Z to CSV".
+   - This rewrites the current "snake_path.csv" so every well has that Z value.
+
+
+5. Choose the CSV you just made
+-------------------------------
+
+1) Go to Tab 1 (Exp).
+
+2) In the "Open CSV" row:
+   - If the path is not already pointing to your new file, click the "Browse" button.
+   - Navigate into:
+       testing/Well_Location
+     (or the folder where you saved the CSV).
+   - Select "snake_path.csv" (or your chosen CSV) and confirm.
+
+3) Once a valid CSV path is present and no experiment is currently running, the "Start Experiment" button will be enabled.
+
+
+6. Choose the output folder for images/videos
+---------------------------------------------
+
+On Tab 1 (Exp):
+
+1) In "Save Images to Folder:":
+   - Either accept the default (for example, an external drive path), or
+   - Type your desired base folder path, or
+   - Click the folder icon to pick a folder from a file chooser.
+
+2) The program will create a timestamped subfolder inside this base folder for each experiment and store all pictures (and any future videos) there automatically.
+
+
+7. Set mode, number of rounds, and time between rounds
+------------------------------------------------------
+
+Still on Tab 1 (Exp):
+
+1) Experiment mode:
+   - Under "Experiment mode", choose exactly one:
+     - "Picture"  → take still images at each well.
+     - "Video"    → placeholder for future video capture.
+     - "Preview"  → moves through wells but does not save images.
+
+2) How many rounds of photos:
+   - Under "How many rounds/experiments?":
+     - Set "Rounds" to the number of times you want to visit all wells (e.g. 3).
+     - This is how many full sequences of the plate will be run.
+
+3) Time between rounds:
+   - Under "How long will I wait between each run?":
+     - Set "Min(s)" to the number of minutes between rounds (e.g. 5).
+     - Internally this is converted to seconds; the program waits that long after finishing all wells before starting the next round.
+
+
+8. Run, pause, and stop the experiment
+--------------------------------------
+
+1) Start:
+   - Click "Start Experiment".
+   - The printer will move through each well in the CSV, and:
+     - In "Picture" mode: save images into the newly created subfolder.
+     - In "Preview" mode: only moves and shows the camera preview; no images are saved.
+
+2) Pause / resume:
+   - Click "Pause" to temporarily halt.
+   - The current round will resume from where it left off when you click "Resume".
+
+3) Stop:
+   - Click "Stop Experiment" to end after the current run finishes.
+
+4) Automatic stop:
+   - When all configured "Rounds" are completed, the experiment stops automatically.
+
+
+9. Closing down
+----------------
+
+1) Close the GUI windows when you are finished.
+
+2) In the terminal, deactivate the virtual environment:
+   deactivate
+
+3) If you used an external drive as the output folder, safely unmount it before unplugging.
+
