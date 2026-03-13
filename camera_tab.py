@@ -43,6 +43,8 @@ CAMERA_ROTATION_KEY = "-ROTATION_INPUT-"
 PIC_WIDTH_KEY = "-PIC_WIDTH_INPUT-"
 PIC_HEIGHT_KEY = "-PIC_HEIGHT_INPUT-"
 PIC_SAVE_FOLDER_KEY = "-PIC_SAVE_FOLDER_INPUT-"
+EXPOSURE_AUTO_KEY = "-EXPOSURE_AUTO-"
+EXPOSURE_MANUAL_KEY = "-EXPOSURE_MANUAL-"
 
 
 # Define function to create unique text string using date and time.
@@ -60,6 +62,45 @@ def check_for_digits_in_key(key_str, window, event, values):
             # delete last char from input
             # print("Found a letter instead of a number")
             window[key_str].update(values[key_str][:-1])
+
+
+def set_auto_exposure(camera: Picamera2):
+    """
+    Put the camera back into automatic exposure / AWB.
+    """
+    try:
+        camera.set_controls(
+            {
+                "ExposureMode": 0,  # normal/auto exposure
+                "AwbMode": 0,       # auto white balance
+            }
+        )
+    except Exception as e:
+        print(f"Warning: failed to set auto exposure controls: {e}")
+
+
+def set_manual_exposure(camera: Picamera2):
+    """
+    Simple manual exposure preset.
+
+    Uses a fixed exposure time and locks current colour gains so
+    the image does not keep changing with lighting.
+    """
+    try:
+        # Lock current colour gains
+        metadata = camera.capture_metadata()
+        colour_gains = metadata.get("ColourGains", (1.0, 1.0))
+
+        camera.set_controls(
+            {
+                "ExposureTime": 30901,  # example value from experiments (microseconds)
+                "ExposureMode": 1,      # manual exposure
+                "ColourGains": colour_gains,
+                "AwbMode": 0,           # use locked gains
+            }
+        )
+    except Exception as e:
+        print(f"Warning: failed to set manual exposure controls: {e}")
 
 def main():
     print("Main")
@@ -86,6 +127,9 @@ def main():
                      [sg.Text("Set Image Capture Resolution:")],
                      [sg.Text("Pic Width (in pixels):"), sg.InputText(PIC_WIDTH, size=(10, 1), enable_events=True, key=PIC_WIDTH_KEY)],
                      [sg.Text("Pic Height (in pixels):"),sg.InputText(PIC_HEIGHT, size=(10, 1), enable_events=True, key=PIC_HEIGHT_KEY)],
+                     [sg.Text("Exposure Mode:"),
+                      sg.Radio("Auto", "EXPOSURE_MODE", default=True, key=EXPOSURE_AUTO_KEY),
+                      sg.Radio("Manual", "EXPOSURE_MODE", default=False, key=EXPOSURE_MANUAL_KEY)],
                      [sg.Button(UPDATE_CAMERA_TEXT)],
                      [sg.Text("Save Images to Folder:"), sg.In(size=(25,1), enable_events=True, key=PIC_SAVE_FOLDER_KEY), sg.FolderBrowse()]
                    ]
@@ -148,6 +192,14 @@ def main():
             PIC_WIDTH = new_pic_width
             PIC_HEIGHT = new_pic_height
             #print(f"Global: {PIC_WIDTH, PIC_HEIGHT}")
+
+            # Update exposure mode
+            if values.get(EXPOSURE_AUTO_KEY):
+                print("Setting camera to AUTO exposure.")
+                set_auto_exposure(camera)
+            elif values.get(EXPOSURE_MANUAL_KEY):
+                print("Setting camera to MANUAL exposure preset.")
+                set_manual_exposure(camera)
         if event == PIC_SAVE_FOLDER_KEY:
             save_folder = values[PIC_SAVE_FOLDER_KEY]
             print(f"Save folder: {save_folder}")

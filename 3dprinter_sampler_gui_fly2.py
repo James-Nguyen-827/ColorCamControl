@@ -205,12 +205,12 @@ PREVIEW_WINDOW_OFFSET = 30
 DEFAULT_SCREEN_INDEX = 0
 
 # EXPOSURE MODE CONSTANTS
-EXPOSURE_MODE = "auto"
-# Possible modes: off, auto, night, nightpreview, backlight, spotlight, sports, snow, beach, verylong, fixedfps, antishake, fireworks
-EXPOSURE_MODE_KEY = "-EXPOSURE MODE-"
-EXPO_SETTLE_TIME = 2 # in seconds
+EXPO_SETTLE_TIME = 2  # in seconds
 EXPO_SETTLE_TIME_KEY = "-EXPO SETTLE TIME-"
 SET_EXPOSURE_MODE = "Set Expo"
+# New keys for exposure mode selection in CAM tab
+EXPO_AUTO_KEY = "-EXPO_AUTO-"
+EXPO_MANUAL_KEY = "-EXPO_MANUAL-"
 
 is_running_experiment = False
 # Camera access lock to avoid preview/still races
@@ -1412,42 +1412,62 @@ def setup_default_camera_settings(camera):
 
 
 def set_exposure_mode(event, values, window, camera):
-    
-    # Extract Values
-    
-    expo_mode = values[EXPOSURE_MODE_KEY]
-    print(f"expo_mode: {expo_mode}")
-    settle_time = int(values[EXPO_SETTLE_TIME_KEY])
-    print(f"settle_time: {settle_time}")
-    
-    # Turn Exposure mode back on so camera can adjust to new light
-    camera.exposure_mode = "auto"
-    camera.awb_mode = 'auto'
-    
-    # Set ISO to desired value
-    camera.iso = 400
-    
-    # Wait for Automatic Gain Control to settle
-    time.sleep(settle_time)
-    
-    # Now fix the values
-    
-    # Exposure Mode
-    # camera.framerate = 30
-    # picamera2 exposure controls
-    # Get current exposure time from metadata
-    metadata = camera.capture_metadata()
-    exposure_time = metadata.get("ExposureTime", 30901)
-    camera.set_controls({"ExposureTime": exposure_time})
-    camera.set_controls({"ExposureMode": 1})  # 1 = manual
-    # Get current AWB gains from metadata
-    colour_gains = metadata.get("ColourGains", (1.5, 1.8))
-    camera.set_controls({"ColourGains": colour_gains})
-    camera.set_controls({"AwbMode": 0})  # 0 = off
-    # Must let camera sleep so exposure mode can settle on certain values, else black screen happens
-    # time.sleep(settle_time)
-    
-    
+    """
+    Toggle between automatic and manual exposure using the CAM tab controls.
+    - Auto: lets the camera continuously adapt exposure.
+    - Manual: locks the current exposure and AWB gains after a short settle time.
+    """
+    try:
+        settle_time = int(values.get(EXPO_SETTLE_TIME_KEY, EXPO_SETTLE_TIME))
+    except (TypeError, ValueError):
+        settle_time = EXPO_SETTLE_TIME
+    print(f"Exposure settle_time: {settle_time} sec")
+
+    controls = getattr(camera, "camera_controls", {})
+    has_awb_mode = "AwbMode" in controls
+    has_ae_enable = "AeEnable" in controls
+
+    use_auto = values.get(EXPO_AUTO_KEY, True)
+
+    if use_auto:
+        print("Setting camera to AUTO-like exposure (let libcamera manage it).")
+        ctrl = {}
+        # Re-enable automatic exposure if supported
+        if has_ae_enable:
+            ctrl["AeEnable"] = True
+        if has_awb_mode:
+            # 0 = auto/on in many picamera2 builds
+            ctrl["AwbMode"] = 0
+        if ctrl:
+            try:
+                camera.set_controls(ctrl)
+            except Exception as e:
+                print(f"Failed to apply auto exposure controls: {e}")
+        return
+
+    # Manual mode selected: let auto settle, then lock exposure + gains
+    print("Setting camera to MANUAL-like exposure (lock current values).")
+    try:
+        # Give AGC/AWB a little time to converge
+        time.sleep(settle_time)
+
+        metadata = camera.capture_metadata()
+        exposure_time = metadata.get("ExposureTime", 30901)
+        colour_gains = metadata.get("ColourGains", (1.5, 1.8))
+
+        ctrl = {"ExposureTime": exposure_time}
+        if has_awb_mode:
+            ctrl["ColourGains"] = colour_gains
+            # 0 = off/locked in many picamera2 builds
+            ctrl["AwbMode"] = 0
+        if has_ae_enable:
+            ctrl["AeEnable"] = False
+
+        camera.set_controls(ctrl)
+        print(f"Locked manual exposure at {exposure_time} µs, gains={colour_gains}")
+    except Exception as e:
+        print(f"Error while setting manual exposure: {e}")
+
     pass
 
 def set_white_balance(camera, red_gain=1.5, blue_gain=1.8, isAutoWhiteBalanceOn=False):
@@ -1646,8 +1666,14 @@ def main():
         [sg.Text("Pic Width (in pixels):"), sg.InputText(PIC_WIDTH, size=(10, 1), enable_events=True, key=PIC_WIDTH_KEY)],
         [sg.Text("Pic Height (in pixels):"), sg.InputText(PIC_HEIGHT, size=(10, 1), enable_events=True, key=PIC_HEIGHT_KEY)],
         [sg.Button(UPDATE_CAMERA_TEXT)],
-        [sg.Text("Exposure Mode:"), sg.InputText(EXPOSURE_MODE, size=(10, 1), enable_events=True, key=EXPOSURE_MODE_KEY),
-         sg.Text("Expo Settle Time (in sec):"), sg.InputText(EXPO_SETTLE_TIME, size=(5, 1), key=EXPO_SETTLE_TIME_KEY), sg.Button(SET_EXPOSURE_MODE)],
+        [
+            sg.Text("Exposure:"),
+            sg.Radio("Auto", "EXPO_MODE", default=True, key=EXPO_AUTO_KEY),
+            sg.Radio("Manual", "EXPO_MODE", default=False, key=EXPO_MANUAL_KEY),
+            sg.Text("Settle (s):"),
+            sg.InputText(EXPO_SETTLE_TIME, size=(5, 1), key=EXPO_SETTLE_TIME_KEY),
+            sg.Button(SET_EXPOSURE_MODE),
+        ],
         [sg.HorizontalSeparator()],
         [sg.Text("Preview Location (e.g. x = 0, y = 0):")],
         [sg.Text("x:"), sg.InputText("0", size=(8, 1), enable_events=True, key=PREVIEW_LOC_X_KEY),
